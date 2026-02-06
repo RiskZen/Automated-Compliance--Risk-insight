@@ -1,0 +1,140 @@
+{
+  "identity": {
+    "persona": "E1: The Anti-AI Designer",
+    "mission": "Create a strategic, enterprise-grade GRC dashboard that feels like a 'Command Center' rather than a spreadsheet. Prioritize clarity, density, and strategic foresight.",
+    "anti_patterns": [
+      "No generic centered layouts.",
+      "No 'Inter' for headings.",
+      "No full-screen heavy gradients.",
+      "No 'cute' illustrations; use abstract data art or professional photography.",
+      "No 'default' shadcn styling; customize borders and shadows."
+    ]
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Outfit, sans-serif",
+      "body": "Plus Jakarta Sans, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+      "h2": "text-3xl font-semibold tracking-tight",
+      "h3": "text-2xl font-semibold",
+      "body_lg": "text-lg leading-relaxed",
+      "body": "text-base leading-relaxed text-slate-600",
+      "caption": "text-sm text-slate-500",
+      "mono_sm": "text-xs font-mono text-slate-500"
+    },
+    "instructions": "Use Outfit for all Headings (h1-h3). Use Plus Jakarta Sans for all body text. Use JetBrains Mono for data values, IDs, and code snippets."
+  },
+  "colors": {
+    "palette": {
+      "primary": "#0f172a",
+      "primary_foreground": "#f8fafc",
+      "secondary": "#f1f5f9",
+      "secondary_foreground": "#0f172a",
+      "accent": "#3b82f6",
+      "accent_foreground": "#ffffff",
+      "background": "#f8fafc",
+      "surface": "#ffffff",
+      "border": "#e2e8f0",
+      "danger": "#ef4444",
+      "warning": "#f59e0b",
+      "success": "#10b981",
+      "chart_1": "#0f172a",
+      "chart_2": "#3b82f6",
+      "chart_3": "#ef4444",
+      "chart_4": "#f59e0b",
+      "chart_5": "#10b981"
+    },
+    "usage": {
+      "dashboard_bg": "bg-slate-50",
+      "card_bg": "bg-white",
+      "sidebar_bg": "bg-slate-900",
+      "sidebar_text": "text-slate-300",
+      "sidebar_active": "bg-slate-800 text-white",
+      "risk_high": "text-red-600 bg-red-50 border-red-200",
+      "risk_medium": "text-amber-600 bg-amber-50 border-amber-200",
+      "risk_low": "text-emerald-600 bg-emerald-50 border-emerald-200"
+    }
+  },
+  "layout": {
+    "grid_system": "Bento Grid: Use grid-cols-1 md:grid-cols-4 gap-6. Spanning logic: Key metrics (col-span-1), Main charts (col-span-2 or 3), Feeds (col-span-1 row-span-2).",
+    "spacing": "Generous padding inside cards (p-6 or p-8). Tight gaps between related data points (gap-2).",
+    "sidebar": "Fixed sidebar on left (w-64), hidden on mobile. Main content area ml-64 (md).",
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-slate-900 hover:bg-slate-800 text-white rounded-md px-4 py-2 font-medium transition-all shadow-sm",
+      "secondary": "bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 rounded-md px-4 py-2 font-medium transition-all shadow-sm",
+      "ghost": "hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-md px-4 py-2 transition-all"
+    },
+    "cards": {
+      "base": "bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200",
+      "interactive": "cursor-pointer hover:border-blue-300 hover:ring-2 hover:ring-blue-100 transition-all duration-200"
+    },
+    "badges": {
+      "base": "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+      "outline": "text-foreground border border-slate-200"
+    },
+    "inputs": {
+      "base": "flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "backdrop-blur-md bg-white/70 border-b border-white/20",
+    "tracing_beam": "Use for high-priority alerts or active states. Animate a border color change or glow.",
+    "shadows": "shadow-sm for cards, shadow-lg for dropdowns/modals. Avoid heavy diffuse shadows; keep it crisp.",
+    "gradients": "Use extremely subtle gradients on card backgrounds (e.g., bg-gradient-to-br from-white to-slate-50) to avoid flatness."
+  },
+  "assets": {
+    "images": [
+      {
+        "category": "user_avatar",
+        "url": "https://images.unsplash.com/photo-1758518727888-ffa196002e59?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHw0fHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHdvbWFuJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzcwMzk3MzkyfDA&ixlib=rb-4.1.0&q=85",
+        "alt": "Profile Picture of Sarah Jenkins, Chief Risk Officer"
+      },
+      {
+        "category": "team_meeting",
+        "url": "https://images.unsplash.com/photo-1758691737158-18ffa31c0a46?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxkaXZlcnNlJTIwYnVzaW5lc3MlMjB0ZWFtJTIwbWVldGluZ3xlbnwwfHx8fDE3NzAzOTczOTR8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Risk Committee Collaboration"
+      },
+      {
+        "category": "abstract_network",
+        "url": "https://images.pexels.com/photos/14314638/pexels-photo-14314638.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "alt": "Abstract Data Network Background"
+      },
+       {
+        "category": "logo_openai",
+        "url": "https://images.pexels.com/photos/15863044/pexels-photo-15863044.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "alt": "OpenAI Integration Logo"
+      },
+      {
+        "category": "logo_nvidia",
+        "url": "https://images.pexels.com/photos/30608593/pexels-photo-30608593.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "alt": "Nvidia Integration Logo"
+      }
+    ],
+    "icons_library": "lucide-react"
+  },
+  "accessibility": {
+    "contrast": "Ensure all text meets WCAG AA standards. Use slate-600+ for body text on white.",
+    "focus_states": "Visible focus rings (ring-2 ring-blue-500) on all interactive elements.",
+    "aria_labels": "All icon-only buttons must have aria-label."
+  },
+  "universal_guidelines": {
+    "general": "Do not center align the app container. Use Left alignment for text heavy sections. Use micro-interactions.",
+    "transitions": "Use 'transition-all duration-200 ease-in-out' for hover states. Do NOT use 'transition: all' globally.",
+    "testing": "Add 'data-testid' to all interactive elements."
+  },
+  "instructions_to_main_agent": [
+    "Install 'lucide-react', 'recharts', 'framer-motion', 'clsx', 'tailwind-merge' if not present.",
+    "Setup 'Outfit' and 'Plus Jakarta Sans' fonts via Google Fonts import in index.css.",
+    "Create a Layout component that includes the Sidebar and Topbar.",
+    "Use 'recharts' for the Risk Heatmap and Trend Lines.",
+    "Use 'framer-motion' for page transitions and card entry animations.",
+    "Implement the 'Map Once, Comply Many' feature as a visual node graph or a matrix view.",
+    "Ensure the 'Risk Intelligence' dashboard uses the Bento Grid layout."
+  ]
+}
