@@ -4,10 +4,16 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import axios from 'axios';
 import Sidebar from '@/components/Sidebar';
 import Dashboard from '@/pages/Dashboard';
-import RiskIntelligence from '@/pages/RiskIntelligence';
+import FrameworkManagement from '@/pages/FrameworkManagement';
 import ControlMapping from '@/pages/ControlMapping';
-import EvidenceCollection from '@/pages/EvidenceCollection';
+import PolicyManagement from '@/pages/PolicyManagement';
+import ControlTesting from '@/pages/ControlTesting';
+import IssueManagement from '@/pages/IssueManagement';
+import RiskManagement from '@/pages/RiskManagement';
+import KRIManagement from '@/pages/KRIManagement';
+import KCIManagement from '@/pages/KCIManagement';
 import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,23 +22,35 @@ export const AppContext = React.createContext();
 
 function App() {
   const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
+  // State for all entities
+  const [frameworks, setFrameworks] = useState([]);
+  const [frameworkControls, setFrameworkControls] = useState([]);
+  const [unifiedControls, setUnifiedControls] = useState([]);
+  const [policies, setPolicies] = useState([]);
+  const [controlTests, setControlTests] = useState([]);
+  const [evidence, setEvidence] = useState([]);
+  const [issues, setIssues] = useState([]);
   const [risks, setRisks] = useState([]);
-  const [controls, setControls] = useState([]);
   const [kris, setKris] = useState([]);
   const [kcis, setKcis] = useState([]);
-  const [evidence, setEvidence] = useState([]);
 
   useEffect(() => {
-    seedDataAndFetch();
+    initializeApp();
   }, []);
 
-  const seedDataAndFetch = async () => {
+  const initializeApp = async () => {
     setLoading(true);
     try {
-      await axios.post(`${API}/seed-data`);
+      // Seed production data on first load
+      await axios.post(`${API}/seed-production-data`);
+      toast.success('Platform initialized successfully');
       await fetchAllData();
+      setDataLoaded(true);
     } catch (error) {
-      console.error('Error seeding data:', error);
+      console.error('Error initializing app:', error);
+      toast.error('Failed to initialize platform');
     } finally {
       setLoading(false);
     }
@@ -40,33 +58,71 @@ function App() {
 
   const fetchAllData = async () => {
     try {
-      const [risksRes, controlsRes, krisRes, kcisRes, evidenceRes] = await Promise.all([
+      const [fwRes, ucRes, polRes, testRes, evRes, issueRes, riskRes, kriRes, kciRes] = await Promise.all([
+        axios.get(`${API}/frameworks`),
+        axios.get(`${API}/unified-controls`),
+        axios.get(`${API}/policies`),
+        axios.get(`${API}/control-tests`),
+        axios.get(`${API}/evidence`),
+        axios.get(`${API}/issues`),
         axios.get(`${API}/risks`),
-        axios.get(`${API}/controls`),
         axios.get(`${API}/kris`),
         axios.get(`${API}/kcis`),
-        axios.get(`${API}/evidence`),
       ]);
-      setRisks(risksRes.data);
-      setControls(controlsRes.data);
-      setKris(krisRes.data);
-      setKcis(kcisRes.data);
-      setEvidence(evidenceRes.data);
+      
+      setFrameworks(fwRes.data);
+      setUnifiedControls(ucRes.data);
+      setPolicies(polRes.data);
+      setControlTests(testRes.data);
+      setEvidence(evRes.data);
+      setIssues(issueRes.data);
+      setRisks(riskRes.data);
+      setKris(kriRes.data);
+      setKcis(kciRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
+      toast.error('Failed to fetch data');
     }
   };
 
   const contextValue = {
-    risks,
-    controls,
-    kris,
-    kcis,
+    frameworks,
+    setFrameworks,
+    frameworkControls,
+    setFrameworkControls,
+    unifiedControls,
+    setUnifiedControls,
+    policies,
+    setPolicies,
+    controlTests,
+    setControlTests,
     evidence,
+    setEvidence,
+    issues,
+    setIssues,
+    risks,
+    setRisks,
+    kris,
+    setKris,
+    kcis,
+    setKcis,
     loading,
+    dataLoaded,
     refreshData: fetchAllData,
     API,
   };
+
+  if (loading && !dataLoaded) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center">
+          <div className="h-16 w-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-slate-700 font-medium">Initializing GRC Platform...</p>
+          <p className="text-sm text-slate-500 mt-2">Loading frameworks and controls</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AppContext.Provider value={contextValue}>
@@ -77,14 +133,19 @@ function App() {
             <main className="flex-1 md:ml-64">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/risk-intelligence" element={<RiskIntelligence />} />
+                <Route path="/frameworks" element={<FrameworkManagement />} />
                 <Route path="/control-mapping" element={<ControlMapping />} />
-                <Route path="/evidence" element={<EvidenceCollection />} />
+                <Route path="/policies" element={<PolicyManagement />} />
+                <Route path="/control-testing" element={<ControlTesting />} />
+                <Route path="/issues" element={<IssueManagement />} />
+                <Route path="/risks" element={<RiskManagement />} />
+                <Route path="/kris" element={<KRIManagement />} />
+                <Route path="/kcis" element={<KCIManagement />} />
               </Routes>
             </main>
           </div>
         </BrowserRouter>
-        <Toaster position="top-right" />
+        <Toaster position="top-right" richColors />
       </div>
     </AppContext.Provider>
   );
