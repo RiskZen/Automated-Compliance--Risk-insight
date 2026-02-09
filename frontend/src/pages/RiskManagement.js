@@ -37,7 +37,7 @@ const RiskManagement = () => {
     }
   };
 
-  const useAISuggestion = (suggestion) => {
+  const applyAISuggestion = (suggestion) => {
     setNewRisk({
       name: suggestion.name,
       description: suggestion.description,
