@@ -1,4 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,11 +7,12 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 import json
+import shutil
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -24,6 +26,99 @@ api_router = APIRouter(prefix="/api")
 
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 
+# Ensure uploads directory exists
+UPLOADS_DIR = Path("/app/backend/uploads")
+UPLOADS_DIR.mkdir(exist_ok=True)
+
+# ============ MODELS ============
+
+class Framework(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str
+    version: str
+    enabled: bool = False
+    total_controls: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class FrameworkControl(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    framework_id: str
+    control_id: str
+    title: str
+    description: str
+    category: str
+    testing_procedure: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UnifiedControl(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    ccf_id: str
+    name: str
+    description: str
+    control_type: str
+    frequency: str
+    owner: str
+    mapped_framework_controls: List[str] = []
+    mapped_policies: List[str] = []
+    automation_possible: bool = False
+    automation_config: Optional[Dict] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InternalPolicy(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    policy_id: str
+    name: str
+    description: str
+    category: str
+    owner: str
+    status: str = "Active"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ControlTest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    unified_control_id: str
+    test_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    tester: str
+    status: str
+    result: str
+    evidence_ids: List[str] = []
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class Evidence(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    control_test_id: str
+    unified_control_id: str
+    evidence_type: str
+    description: str
+    automated: bool
+    file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    collected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class Issue(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: str
+    control_test_id: Optional[str] = None
+    unified_control_id: str
+    severity: str
+    status: str
+    assigned_to: str
+    due_date: Optional[str] = None
+    has_exception: bool = False
+    exception_details: Optional[Dict] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class Risk(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -32,28 +127,10 @@ class Risk(BaseModel):
     category: str
     inherent_risk_score: float
     residual_risk_score: float
-    status: str
+    status: str = "Active"
     owner: str
-    kris: List[str] = []
-    linked_controls: List[str] = []
-    ai_insights: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class Control(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    description: str
-    ccf_id: str
-    internal_policy: str
-    control_type: str
-    frequency: str
-    owner: str
-    health_score: float
-    status: str
-    linked_risks: List[str] = []
-    kcis: List[str] = []
-    last_tested: Optional[str] = None
+    kri_ids: List[str] = []
+    linked_control_ids: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class KRI(BaseModel):
@@ -64,8 +141,10 @@ class KRI(BaseModel):
     risk_id: str
     current_value: float
     threshold: float
+    unit: str
     status: str
     trend: str
+    kci_ids: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class KCI(BaseModel):
@@ -74,36 +153,29 @@ class KCI(BaseModel):
     name: str
     description: str
     kri_id: str
-    control_id: str
+    unified_control_id: str
     current_value: float
     target: float
+    unit: str
     status: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class Evidence(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    control_id: str
-    evidence_type: str
-    description: str
-    collected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    automated: bool
-    status: str
-
 class AIAnalysisRequest(BaseModel):
     analysis_type: str
-    context: Dict
+    context: Dict[str, Any]
 
 class AIAnalysisResponse(BaseModel):
     analysis: str
     recommendations: List[str]
+
+# ============ AI SERVICE ============
 
 async def get_ai_analysis(prompt: str) -> str:
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=str(uuid.uuid4()),
-            system_message="You are a GRC (Governance, Risk, and Compliance) expert AI assistant. Provide strategic, actionable insights."
+            system_message="You are a GRC (Governance, Risk, and Compliance) expert AI assistant."
         ).with_model("openai", "gpt-4o")
         
         user_message = UserMessage(text=prompt)
@@ -113,9 +185,214 @@ async def get_ai_analysis(prompt: str) -> str:
         logging.error(f"AI analysis error: {str(e)}")
         return "AI analysis temporarily unavailable"
 
-@api_router.get("/")
-async def root():
-    return {"message": "GRC Intelligence Platform API"}
+# ============ FRAMEWORK ENDPOINTS ============
+
+@api_router.get("/frameworks", response_model=List[Framework])
+async def get_frameworks():
+    frameworks = await db.frameworks.find({}, {"_id": 0}).to_list(1000)
+    for fw in frameworks:
+        if isinstance(fw.get('created_at'), str):
+            fw['created_at'] = datetime.fromisoformat(fw['created_at'])
+    return frameworks
+
+@api_router.post("/frameworks", response_model=Framework)
+async def create_framework(framework: Framework):
+    fw_dict = framework.model_dump()
+    fw_dict['created_at'] = fw_dict['created_at'].isoformat()
+    await db.frameworks.insert_one(fw_dict)
+    return framework
+
+@api_router.patch("/frameworks/{framework_id}/toggle")
+async def toggle_framework(framework_id: str, enabled: bool):
+    await db.frameworks.update_one(
+        {"id": framework_id},
+        {"$set": {"enabled": enabled}}
+    )
+    return {"message": "Framework updated"}
+
+@api_router.get("/framework-controls/{framework_id}", response_model=List[FrameworkControl])
+async def get_framework_controls(framework_id: str):
+    controls = await db.framework_controls.find({"framework_id": framework_id}, {"_id": 0}).to_list(1000)
+    for ctrl in controls:
+        if isinstance(ctrl.get('created_at'), str):
+            ctrl['created_at'] = datetime.fromisoformat(ctrl['created_at'])
+    return controls
+
+# ============ UNIFIED CONTROL ENDPOINTS ============
+
+@api_router.get("/unified-controls", response_model=List[UnifiedControl])
+async def get_unified_controls():
+    controls = await db.unified_controls.find({}, {"_id": 0}).to_list(1000)
+    for ctrl in controls:
+        if isinstance(ctrl.get('created_at'), str):
+            ctrl['created_at'] = datetime.fromisoformat(ctrl['created_at'])
+    return controls
+
+@api_router.post("/unified-controls", response_model=UnifiedControl)
+async def create_unified_control(control: UnifiedControl):
+    ctrl_dict = control.model_dump()
+    ctrl_dict['created_at'] = ctrl_dict['created_at'].isoformat()
+    await db.unified_controls.insert_one(ctrl_dict)
+    return control
+
+@api_router.patch("/unified-controls/{control_id}/map-framework")
+async def map_framework_to_unified(control_id: str, framework_control_ids: List[str]):
+    await db.unified_controls.update_one(
+        {"id": control_id},
+        {"$set": {"mapped_framework_controls": framework_control_ids}}
+    )
+    return {"message": "Mapping updated"}
+
+@api_router.patch("/unified-controls/{control_id}/map-policy")
+async def map_policy_to_unified(control_id: str, policy_ids: List[str]):
+    await db.unified_controls.update_one(
+        {"id": control_id},
+        {"$set": {"mapped_policies": policy_ids}}
+    )
+    return {"message": "Policy mapping updated"}
+
+# ============ INTERNAL POLICY ENDPOINTS ============
+
+@api_router.get("/policies", response_model=List[InternalPolicy])
+async def get_policies():
+    policies = await db.policies.find({}, {"_id": 0}).to_list(1000)
+    for pol in policies:
+        if isinstance(pol.get('created_at'), str):
+            pol['created_at'] = datetime.fromisoformat(pol['created_at'])
+    return policies
+
+@api_router.post("/policies", response_model=InternalPolicy)
+async def create_policy(policy: InternalPolicy):
+    pol_dict = policy.model_dump()
+    pol_dict['created_at'] = pol_dict['created_at'].isoformat()
+    await db.policies.insert_one(pol_dict)
+    return policy
+
+# ============ CONTROL TESTING ENDPOINTS ============
+
+@api_router.get("/control-tests", response_model=List[ControlTest])
+async def get_control_tests():
+    tests = await db.control_tests.find({}, {"_id": 0}).to_list(1000)
+    for test in tests:
+        if isinstance(test.get('test_date'), str):
+            test['test_date'] = datetime.fromisoformat(test['test_date'])
+        if isinstance(test.get('created_at'), str):
+            test['created_at'] = datetime.fromisoformat(test['created_at'])
+    return tests
+
+@api_router.post("/control-tests", response_model=ControlTest)
+async def create_control_test(test: ControlTest):
+    test_dict = test.model_dump()
+    test_dict['test_date'] = test_dict['test_date'].isoformat()
+    test_dict['created_at'] = test_dict['created_at'].isoformat()
+    await db.control_tests.insert_one(test_dict)
+    
+    # Auto-create issue if test failed
+    if test.result == "Fail":
+        control = await db.unified_controls.find_one({"id": test.unified_control_id}, {"_id": 0})
+        issue = Issue(
+            title=f"Control Test Failed: {control.get('name', 'Unknown')}",
+            description=f"Control test failed. Notes: {test.notes or 'No notes provided'}",
+            control_test_id=test.id,
+            unified_control_id=test.unified_control_id,
+            severity="High",
+            status="Open",
+            assigned_to=test.tester
+        )
+        issue_dict = issue.model_dump()
+        issue_dict['created_at'] = issue_dict['created_at'].isoformat()
+        issue_dict['updated_at'] = issue_dict['updated_at'].isoformat()
+        await db.issues.insert_one(issue_dict)
+    
+    return test
+
+# ============ EVIDENCE ENDPOINTS ============
+
+@api_router.get("/evidence", response_model=List[Evidence])
+async def get_evidence():
+    evidence = await db.evidence.find({}, {"_id": 0}).to_list(1000)
+    for ev in evidence:
+        if isinstance(ev.get('collected_at'), str):
+            ev['collected_at'] = datetime.fromisoformat(ev['collected_at'])
+    return evidence
+
+@api_router.post("/evidence/upload")
+async def upload_evidence(
+    control_test_id: str,
+    unified_control_id: str,
+    description: str,
+    file: UploadFile = File(...)
+):
+    file_id = str(uuid.uuid4())
+    file_path = UPLOADS_DIR / f"{file_id}_{file.filename}"
+    
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    evidence = Evidence(
+        control_test_id=control_test_id,
+        unified_control_id=unified_control_id,
+        evidence_type="Manual Upload",
+        description=description,
+        automated=False,
+        file_path=str(file_path),
+        file_name=file.filename
+    )
+    
+    ev_dict = evidence.model_dump()
+    ev_dict['collected_at'] = ev_dict['collected_at'].isoformat()
+    await db.evidence.insert_one(ev_dict)
+    
+    return {"message": "Evidence uploaded", "evidence_id": evidence.id}
+
+@api_router.post("/evidence/automated")
+async def create_automated_evidence(evidence: Evidence):
+    ev_dict = evidence.model_dump()
+    ev_dict['collected_at'] = ev_dict['collected_at'].isoformat()
+    await db.evidence.insert_one(ev_dict)
+    return evidence
+
+# ============ ISSUE MANAGEMENT ENDPOINTS ============
+
+@api_router.get("/issues", response_model=List[Issue])
+async def get_issues():
+    issues = await db.issues.find({}, {"_id": 0}).to_list(1000)
+    for issue in issues:
+        if isinstance(issue.get('created_at'), str):
+            issue['created_at'] = datetime.fromisoformat(issue['created_at'])
+        if isinstance(issue.get('updated_at'), str):
+            issue['updated_at'] = datetime.fromisoformat(issue['updated_at'])
+    return issues
+
+@api_router.post("/issues", response_model=Issue)
+async def create_issue(issue: Issue):
+    issue_dict = issue.model_dump()
+    issue_dict['created_at'] = issue_dict['created_at'].isoformat()
+    issue_dict['updated_at'] = issue_dict['updated_at'].isoformat()
+    await db.issues.insert_one(issue_dict)
+    return issue
+
+@api_router.patch("/issues/{issue_id}/status")
+async def update_issue_status(issue_id: str, status: str):
+    await db.issues.update_one(
+        {"id": issue_id},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Issue status updated"}
+
+@api_router.patch("/issues/{issue_id}/exception")
+async def add_exception(issue_id: str, exception_details: Dict):
+    await db.issues.update_one(
+        {"id": issue_id},
+        {"$set": {
+            "has_exception": True,
+            "exception_details": exception_details,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    return {"message": "Exception added"}
+
+# ============ RISK MANAGEMENT ENDPOINTS ============
 
 @api_router.get("/risks", response_model=List[Risk])
 async def get_risks():
@@ -132,20 +409,24 @@ async def create_risk(risk: Risk):
     await db.risks.insert_one(risk_dict)
     return risk
 
-@api_router.get("/controls", response_model=List[Control])
-async def get_controls():
-    controls = await db.controls.find({}, {"_id": 0}).to_list(1000)
-    for control in controls:
-        if isinstance(control.get('created_at'), str):
-            control['created_at'] = datetime.fromisoformat(control['created_at'])
-    return controls
+@api_router.post("/risks/ai-suggest")
+async def ai_suggest_risks(industry: str = "General"):
+    prompt = f"""As a GRC expert, suggest top 10 risks for {industry} industry.
+Provide in JSON format:
+{{
+  "risks": [
+    {{"name": "Risk Name", "description": "Description", "category": "Category", "inherent_score": 7.5}}
+  ]
+}}"""
+    
+    response = await get_ai_analysis(prompt)
+    try:
+        parsed = json.loads(response)
+        return parsed
+    except:
+        return {"risks": [], "error": "Could not parse AI response"}
 
-@api_router.post("/controls", response_model=Control)
-async def create_control(control: Control):
-    control_dict = control.model_dump()
-    control_dict['created_at'] = control_dict['created_at'].isoformat()
-    await db.controls.insert_one(control_dict)
-    return control
+# ============ KRI ENDPOINTS ============
 
 @api_router.get("/kris", response_model=List[KRI])
 async def get_kris():
@@ -162,6 +443,8 @@ async def create_kri(kri: KRI):
     await db.kris.insert_one(kri_dict)
     return kri
 
+# ============ KCI ENDPOINTS ============
+
 @api_router.get("/kcis", response_model=List[KCI])
 async def get_kcis():
     kcis = await db.kcis.find({}, {"_id": 0}).to_list(1000)
@@ -177,63 +460,20 @@ async def create_kci(kci: KCI):
     await db.kcis.insert_one(kci_dict)
     return kci
 
-@api_router.get("/evidence", response_model=List[Evidence])
-async def get_evidence():
-    evidence = await db.evidence.find({}, {"_id": 0}).to_list(1000)
-    for ev in evidence:
-        if isinstance(ev.get('collected_at'), str):
-            ev['collected_at'] = datetime.fromisoformat(ev['collected_at'])
-    return evidence
-
-@api_router.post("/evidence", response_model=Evidence)
-async def create_evidence(evidence: Evidence):
-    evidence_dict = evidence.model_dump()
-    evidence_dict['collected_at'] = evidence_dict['collected_at'].isoformat()
-    await db.evidence.insert_one(evidence_dict)
-    return evidence
+# ============ AI ANALYSIS ENDPOINT ============
 
 @api_router.post("/ai/analyze", response_model=AIAnalysisResponse)
 async def analyze_with_ai(request: AIAnalysisRequest):
     try:
-        if request.analysis_type == "control_health_impact":
-            prompt = f"""Analyze how control health impacts risk rating:
-Context: {json.dumps(request.context)}
+        prompt = f"""Analyze the following GRC data:
+Type: {request.analysis_type}
+Context: {json.dumps(request.context, indent=2)}
 
-Provide:
-1. Impact analysis of control health on risk score
-2. Specific recommendations to improve control effectiveness
-3. Priority actions
-
-Format as JSON with 'analysis' and 'recommendations' keys."""
-        
-        elif request.analysis_type == "risk_kri_mapping":
-            prompt = f"""Analyze Risk-KRI-KCI relationships:
-Context: {json.dumps(request.context)}
-
-Provide:
-1. Analysis of KRI effectiveness for risk monitoring
-2. Recommendations for KCI improvements
-3. Automated monitoring suggestions
-
-Format as JSON with 'analysis' and 'recommendations' keys."""
-        
-        elif request.analysis_type == "ccf_mapping":
-            prompt = f"""Map CCF controls to internal policy:
-Context: {json.dumps(request.context)}
-
-Provide:
-1. Mapping analysis and coverage gaps
-2. Recommendations for policy alignment
-3. Automation opportunities
-
-Format as JSON with 'analysis' and 'recommendations' keys."""
-        
-        else:
-            prompt = f"""Analyze GRC data:
-Context: {json.dumps(request.context)}
-
-Provide strategic insights and actionable recommendations.
-Format as JSON with 'analysis' and 'recommendations' keys."""
+Provide analysis and recommendations in JSON format:
+{{
+  "analysis": "Your analysis here",
+  "recommendations": ["rec1", "rec2", ...]
+}}"""
         
         response = await get_ai_analysis(prompt)
         
@@ -246,88 +486,89 @@ Format as JSON with 'analysis' and 'recommendations' keys."""
         except:
             return AIAnalysisResponse(
                 analysis=response,
-                recommendations=["Review analysis for specific action items"]
+                recommendations=["Review analysis for action items"]
             )
-    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.post("/seed-data")
-async def seed_data():
+# ============ DASHBOARD ENDPOINT ============
+
+@api_router.get("/dashboard/stats")
+async def get_dashboard_stats():
+    # Calculate real-time stats from actual data
+    frameworks = await db.frameworks.find({"enabled": True}, {"_id": 0}).to_list(100)
+    unified_controls = await db.unified_controls.find({}, {"_id": 0}).to_list(1000)
+    control_tests = await db.control_tests.find({}, {"_id": 0}).to_list(1000)
+    issues = await db.issues.find({}, {"_id": 0}).to_list(1000)
+    risks = await db.risks.find({}, {"_id": 0}).to_list(1000)
+    
+    # Calculate control effectiveness
+    passed_tests = [t for t in control_tests if t.get('result') == 'Pass']
+    control_effectiveness = (len(passed_tests) / len(control_tests) * 100) if control_tests else 0
+    
+    # Calculate average risk score
+    avg_risk = sum(r.get('residual_risk_score', 0) for r in risks) / len(risks) if risks else 0
+    
+    # Issue stats
+    open_issues = [i for i in issues if i.get('status') not in ['Resolved', 'Closed']]
+    
+    return {
+        "enabled_frameworks": len(frameworks),
+        "total_unified_controls": len(unified_controls),
+        "control_effectiveness": round(control_effectiveness, 1),
+        "total_tests_performed": len(control_tests),
+        "passed_tests": len(passed_tests),
+        "failed_tests": len(control_tests) - len(passed_tests),
+        "open_issues": len(open_issues),
+        "total_issues": len(issues),
+        "total_risks": len(risks),
+        "avg_residual_risk": round(avg_risk, 2)
+    }
+
+# ============ SEED DATA ENDPOINT ============
+
+@api_router.post("/seed-production-data")
+async def seed_production_data():
+    """Seeds the database with production-ready framework and sample data"""
+    
+    # Clear existing data
+    await db.frameworks.delete_many({})
+    await db.framework_controls.delete_many({})
+    await db.unified_controls.delete_many({})
+    await db.policies.delete_many({})
+    await db.control_tests.delete_many({})
+    await db.evidence.delete_many({})
+    await db.issues.delete_many({})
     await db.risks.delete_many({})
-    await db.controls.delete_many({})
     await db.kris.delete_many({})
     await db.kcis.delete_many({})
-    await db.evidence.delete_many({})
     
-    sample_risks = [
-        {"id": "r1", "name": "Data Breach", "description": "Unauthorized access to sensitive customer data", "category": "Cybersecurity", "inherent_risk_score": 8.5, "residual_risk_score": 4.2, "status": "Active", "owner": "CISO", "kris": ["kri1", "kri2"], "linked_controls": ["c1", "c2"], "ai_insights": "High priority - implement MFA", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "r2", "name": "Regulatory Non-Compliance", "description": "Failure to meet GDPR requirements", "category": "Compliance", "inherent_risk_score": 7.8, "residual_risk_score": 3.5, "status": "Active", "owner": "CCO", "kris": ["kri3"], "linked_controls": ["c3", "c4"], "ai_insights": "Review privacy policies quarterly", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "r3", "name": "Third-Party Risk", "description": "Vendor security vulnerabilities", "category": "Operational", "inherent_risk_score": 7.2, "residual_risk_score": 4.0, "status": "Active", "owner": "Procurement", "kris": ["kri4"], "linked_controls": ["c5"], "ai_insights": "Implement vendor risk scoring", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "r4", "name": "Insider Threat", "description": "Malicious or negligent employee actions", "category": "Security", "inherent_risk_score": 6.8, "residual_risk_score": 3.8, "status": "Active", "owner": "HR/Security", "kris": ["kri5"], "linked_controls": ["c6"], "ai_insights": "Enhanced monitoring needed", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "r5", "name": "Business Continuity", "description": "System downtime affecting operations", "category": "Operational", "inherent_risk_score": 8.0, "residual_risk_score": 3.2, "status": "Active", "owner": "CTO", "kris": ["kri6"], "linked_controls": ["c7"], "ai_insights": "DR tests quarterly", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "r6", "name": "Financial Fraud", "description": "Fraudulent transactions or embezzlement", "category": "Financial", "inherent_risk_score": 7.5, "residual_risk_score": 2.8, "status": "Active", "owner": "CFO", "kris": ["kri7"], "linked_controls": ["c8"], "ai_insights": "Implement real-time alerts", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "r7", "name": "Ransomware Attack", "description": "Encryption of critical systems", "category": "Cybersecurity", "inherent_risk_score": 9.0, "residual_risk_score": 4.5, "status": "Active", "owner": "CISO", "kris": ["kri8"], "linked_controls": ["c9"], "ai_insights": "Backup verification critical", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "r8", "name": "Privacy Violation", "description": "Unauthorized data processing", "category": "Privacy", "inherent_risk_score": 7.0, "residual_risk_score": 3.0, "status": "Active", "owner": "DPO", "kris": ["kri9"], "linked_controls": ["c10"], "ai_insights": "Update consent mechanisms", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "r9", "name": "Supply Chain Disruption", "description": "Critical supplier failure", "category": "Operational", "inherent_risk_score": 6.5, "residual_risk_score": 3.5, "status": "Active", "owner": "COO", "kris": ["kri10"], "linked_controls": ["c11"], "ai_insights": "Diversify supplier base", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "r10", "name": "Reputational Damage", "description": "Negative publicity affecting brand", "category": "Strategic", "inherent_risk_score": 7.8, "residual_risk_score": 4.2, "status": "Active", "owner": "CMO", "kris": [], "linked_controls": ["c12"], "ai_insights": "Social media monitoring", "created_at": datetime.now(timezone.utc).isoformat()},
-    ]
+    # Import framework data
+    from seed_data import get_frameworks_data, get_sample_data
     
-    sample_controls = [
-        {"id": "c1", "name": "Multi-Factor Authentication", "description": "Enforce MFA for all user accounts", "ccf_id": "CCF-AC-001", "internal_policy": "POL-SEC-100", "control_type": "Preventive", "frequency": "Continuous", "owner": "IT Security", "health_score": 92.0, "status": "Effective", "linked_risks": ["r1"], "kcis": ["kci1"], "last_tested": "2026-01-10", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c2", "name": "Encryption at Rest", "description": "Encrypt all stored sensitive data", "ccf_id": "CCF-DS-002", "internal_policy": "POL-DATA-200", "control_type": "Preventive", "frequency": "Continuous", "owner": "IT Security", "health_score": 88.0, "status": "Effective", "linked_risks": ["r1"], "kcis": ["kci2"], "last_tested": "2026-01-08", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c3", "name": "Privacy Impact Assessment", "description": "Conduct PIA for new data processing", "ccf_id": "CCF-PR-003", "internal_policy": "POL-PRIV-150", "control_type": "Detective", "frequency": "Quarterly", "owner": "Privacy Office", "health_score": 85.0, "status": "Effective", "linked_risks": ["r2"], "kcis": ["kci3"], "last_tested": "2026-01-05", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c4", "name": "GDPR Compliance Review", "description": "Quarterly GDPR compliance audit", "ccf_id": "CCF-CM-004", "internal_policy": "POL-COMP-300", "control_type": "Detective", "frequency": "Quarterly", "owner": "Compliance", "health_score": 90.0, "status": "Effective", "linked_risks": ["r2"], "kcis": ["kci4"], "last_tested": "2026-01-03", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c5", "name": "Vendor Security Assessment", "description": "Annual vendor security review", "ccf_id": "CCF-TP-005", "internal_policy": "POL-VEND-400", "control_type": "Detective", "frequency": "Annual", "owner": "Procurement", "health_score": 78.0, "status": "Needs Improvement", "linked_risks": ["r3"], "kcis": ["kci5"], "last_tested": "2025-12-15", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c6", "name": "Access Review", "description": "Quarterly user access review", "ccf_id": "CCF-AC-006", "internal_policy": "POL-IAM-250", "control_type": "Detective", "frequency": "Quarterly", "owner": "IT Security", "health_score": 82.0, "status": "Effective", "linked_risks": ["r4"], "kcis": ["kci6"], "last_tested": "2026-01-01", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c7", "name": "Disaster Recovery Test", "description": "Quarterly DR plan testing", "ccf_id": "CCF-BC-007", "internal_policy": "POL-BC-500", "control_type": "Corrective", "frequency": "Quarterly", "owner": "IT Operations", "health_score": 95.0, "status": "Effective", "linked_risks": ["r5"], "kcis": ["kci7"], "last_tested": "2026-01-12", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c8", "name": "Transaction Monitoring", "description": "Real-time fraud detection", "ccf_id": "CCF-FM-008", "internal_policy": "POL-FIN-600", "control_type": "Detective", "frequency": "Continuous", "owner": "Finance", "health_score": 93.0, "status": "Effective", "linked_risks": ["r6"], "kcis": ["kci8"], "last_tested": "2026-01-13", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c9", "name": "Backup Verification", "description": "Daily backup integrity checks", "ccf_id": "CCF-BC-009", "internal_policy": "POL-BKP-700", "control_type": "Preventive", "frequency": "Daily", "owner": "IT Operations", "health_score": 89.0, "status": "Effective", "linked_risks": ["r7"], "kcis": ["kci9"], "last_tested": "2026-01-14", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c10", "name": "Consent Management", "description": "User consent tracking system", "ccf_id": "CCF-PR-010", "internal_policy": "POL-PRIV-180", "control_type": "Preventive", "frequency": "Continuous", "owner": "Privacy Office", "health_score": 87.0, "status": "Effective", "linked_risks": ["r8"], "kcis": ["kci10"], "last_tested": "2026-01-11", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c11", "name": "Supplier Diversification", "description": "Multiple supplier strategy", "ccf_id": "CCF-TP-011", "internal_policy": "POL-PROC-450", "control_type": "Preventive", "frequency": "Annual", "owner": "Procurement", "health_score": 75.0, "status": "Needs Improvement", "linked_risks": ["r9"], "kcis": [], "last_tested": "2025-12-20", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "c12", "name": "Social Media Monitoring", "description": "Brand reputation tracking", "ccf_id": "CCF-CM-012", "internal_policy": "POL-COM-800", "control_type": "Detective", "frequency": "Continuous", "owner": "Marketing", "health_score": 80.0, "status": "Effective", "linked_risks": ["r10"], "kcis": [], "last_tested": "2026-01-09", "created_at": datetime.now(timezone.utc).isoformat()},
-    ]
+    frameworks_data = get_frameworks_data()
+    sample_data = get_sample_data()
     
-    sample_kris = [
-        {"id": "kri1", "name": "Failed Login Attempts", "description": "Number of failed login attempts per hour", "risk_id": "r1", "current_value": 45.0, "threshold": 100.0, "status": "Normal", "trend": "Stable", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kri2", "name": "Data Access Violations", "description": "Unauthorized data access attempts", "risk_id": "r1", "current_value": 12.0, "threshold": 50.0, "status": "Normal", "trend": "Decreasing", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kri3", "name": "Compliance Gaps", "description": "Number of open compliance findings", "risk_id": "r2", "current_value": 8.0, "threshold": 20.0, "status": "Normal", "trend": "Stable", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kri4", "name": "Vendor Security Score", "description": "Average vendor security rating", "risk_id": "r3", "current_value": 72.0, "threshold": 80.0, "status": "Warning", "trend": "Stable", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kri5", "name": "Privileged Access Usage", "description": "Abnormal privileged account activity", "risk_id": "r4", "current_value": 15.0, "threshold": 30.0, "status": "Normal", "trend": "Stable", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kri6", "name": "System Uptime", "description": "Percentage of system availability", "risk_id": "r5", "current_value": 99.8, "threshold": 99.0, "status": "Normal", "trend": "Stable", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kri7", "name": "Suspicious Transactions", "description": "Flagged transactions per day", "risk_id": "r6", "current_value": 5.0, "threshold": 20.0, "status": "Normal", "trend": "Decreasing", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kri8", "name": "Malware Detections", "description": "Malware incidents per week", "risk_id": "r7", "current_value": 3.0, "threshold": 10.0, "status": "Normal", "trend": "Stable", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kri9", "name": "Privacy Complaints", "description": "Privacy-related complaints per month", "risk_id": "r8", "current_value": 2.0, "threshold": 10.0, "status": "Normal", "trend": "Stable", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kri10", "name": "Supplier Lead Time", "description": "Average supplier delivery delay (days)", "risk_id": "r9", "current_value": 4.0, "threshold": 7.0, "status": "Normal", "trend": "Increasing", "created_at": datetime.now(timezone.utc).isoformat()},
-    ]
+    # Insert frameworks
+    for fw in frameworks_data['frameworks']:
+        await db.frameworks.insert_one(fw)
     
-    sample_kcis = [
-        {"id": "kci1", "name": "MFA Adoption Rate", "description": "Percentage of users with MFA enabled", "kri_id": "kri1", "control_id": "c1", "current_value": 98.0, "target": 100.0, "status": "On Track", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kci2", "name": "Encryption Coverage", "description": "Percentage of data encrypted", "kri_id": "kri2", "control_id": "c2", "current_value": 95.0, "target": 100.0, "status": "On Track", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kci3", "name": "PIA Completion Rate", "description": "PIAs completed on time", "kri_id": "kri3", "control_id": "c3", "current_value": 90.0, "target": 95.0, "status": "On Track", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kci4", "name": "GDPR Audit Findings", "description": "Number of GDPR audit findings", "kri_id": "kri3", "control_id": "c4", "current_value": 3.0, "target": 0.0, "status": "Needs Attention", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kci5", "name": "Vendor Assessments", "description": "Vendors assessed annually", "kri_id": "kri4", "control_id": "c5", "current_value": 85.0, "target": 100.0, "status": "Needs Attention", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kci6", "name": "Access Review Completion", "description": "Quarterly reviews completed", "kri_id": "kri5", "control_id": "c6", "current_value": 92.0, "target": 100.0, "status": "On Track", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kci7", "name": "DR Test Success Rate", "description": "Successful DR tests", "kri_id": "kri6", "control_id": "c7", "current_value": 100.0, "target": 100.0, "status": "Excellent", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kci8", "name": "Fraud Detection Rate", "description": "Fraudulent transactions detected", "kri_id": "kri7", "control_id": "c8", "current_value": 99.0, "target": 98.0, "status": "Excellent", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kci9", "name": "Backup Success Rate", "description": "Successful backups percentage", "kri_id": "kri8", "control_id": "c9", "current_value": 99.5, "target": 99.0, "status": "Excellent", "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": "kci10", "name": "Consent Tracking", "description": "User consents properly tracked", "kri_id": "kri9", "control_id": "c10", "current_value": 97.0, "target": 100.0, "status": "On Track", "created_at": datetime.now(timezone.utc).isoformat()},
-    ]
+    # Insert framework controls
+    for ctrl in frameworks_data['framework_controls']:
+        await db.framework_controls.insert_one(ctrl)
     
-    sample_evidence = [
-        {"id": "e1", "control_id": "c1", "evidence_type": "Log Report", "description": "MFA enrollment logs", "collected_at": datetime.now(timezone.utc).isoformat(), "automated": True, "status": "Collected"},
-        {"id": "e2", "control_id": "c2", "evidence_type": "Scan Report", "description": "Encryption verification scan", "collected_at": datetime.now(timezone.utc).isoformat(), "automated": True, "status": "Collected"},
-        {"id": "e3", "control_id": "c3", "evidence_type": "Assessment Report", "description": "Q4 2025 PIA report", "collected_at": datetime.now(timezone.utc).isoformat(), "automated": False, "status": "Collected"},
-        {"id": "e4", "control_id": "c7", "evidence_type": "Test Results", "description": "DR test results Q1 2026", "collected_at": datetime.now(timezone.utc).isoformat(), "automated": True, "status": "Collected"},
-    ]
+    # Insert sample data
+    for uc in sample_data['unified_controls']:
+        await db.unified_controls.insert_one(uc)
     
-    await db.risks.insert_many(sample_risks)
-    await db.controls.insert_many(sample_controls)
-    await db.kris.insert_many(sample_kris)
-    await db.kcis.insert_many(sample_kcis)
-    await db.evidence.insert_many(sample_evidence)
+    for pol in sample_data['policies']:
+        await db.policies.insert_one(pol)
     
-    return {"message": "Sample data seeded successfully"}
+    return {"message": "Production data seeded successfully"}
+
+@api_router.get("/")
+async def root():
+    return {"message": "GRC Intelligence Platform API - Production Ready"}
 
 app.include_router(api_router)
 
