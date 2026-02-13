@@ -1,9 +1,7 @@
 import reflex as rx
 
 config = rx.Config(
-    app_name="reflex_grc",
-    plugins=[
-        rx.plugins.SitemapPlugin(),
-        rx.plugins.TailwindV4Plugin(),
-    ]
+    app_name="grc_platform",
+    db_url="sqlite:///reflex.db",
+    env=rx.Env.DEV,
 )
