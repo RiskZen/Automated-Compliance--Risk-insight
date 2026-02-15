@@ -276,17 +276,16 @@ class RiskState(GRCState):
     def toggle_risk_form(self):
         self.show_risk_form = not self.show_risk_form
     
-    async def get_ai_risk_suggestions(self):
+    def get_ai_risk_suggestions(self):
         """Get AI-powered risk suggestions from Gemini"""
         self.loading_ai = True
-        yield
         
-        suggestions = await ai_service.get_risk_suggestions("General")
+        suggestions = ai_service.get_risk_suggestions("General")
         self.ai_suggestions = suggestions
         self.show_ai_suggestions = True
         self.loading_ai = False
         
-        yield rx.toast.success("AI suggestions generated")
+        return rx.toast.success("AI suggestions generated")
     
     def use_ai_suggestion(self, suggestion: dict):
         """Use an AI-suggested risk"""
