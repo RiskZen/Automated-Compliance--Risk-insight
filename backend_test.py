@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List
 
 class GRCAPITester:
-    def __init__(self, base_url: str = "https://grc-automation.preview.emergentagent.com"):
+    def __init__(self, base_url: str = "https://risk-control-lab.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_base = f"{base_url}/api"
         self.tests_run = 0
