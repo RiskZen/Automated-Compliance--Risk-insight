@@ -1,37 +1,39 @@
 """Global state management for GRC Platform"""
 import reflex as rx
-from typing import List, Dict
+from typing import List, Dict, Any
 import uuid
 from datetime import datetime
 from .database import db_service
 from .ai_service import ai_service
 
+
 class GRCState(rx.State):
     """Global state for the entire GRC application"""
     
-    # Data
-    frameworks: List[Dict] = []
-    unified_controls: List[Dict] = []
-    policies: List[Dict] = []
-    control_tests: List[Dict] = []
-    issues: List[Dict] = []
-    risks: List[Dict] = []
-    kris: List[Dict] = []
-    kcis: List[Dict] = []
+    # Data - using list[dict[str, Any]] for proper typing
+    frameworks: list[dict[str, Any]] = []
+    unified_controls: list[dict[str, Any]] = []
+    policies: list[dict[str, Any]] = []
+    control_tests: list[dict[str, Any]] = []
+    issues: list[dict[str, Any]] = []
+    risks: list[dict[str, Any]] = []
+    kris: list[dict[str, Any]] = []
+    kcis: list[dict[str, Any]] = []
     
     # UI State
     loading: bool = False
     current_page: str = "dashboard"
     
     # Dashboard stats
-    stats: Dict = {
-        "enabled_frameworks": 0,
-        "total_unified_controls": 0,
-        "control_effectiveness": 0,
-        "open_issues": 0,
-        "total_risks": 0,
-        "avg_residual_risk": 0
-    }
+    enabled_frameworks: int = 0
+    total_unified_controls: int = 0
+    control_effectiveness: float = 0
+    total_tests: int = 0
+    passed_tests: int = 0
+    open_issues: int = 0
+    total_issues: int = 0
+    total_risks: int = 0
+    avg_residual_risk: float = 0
     
     async def load_all_data(self):
         """Load all data from database"""
@@ -46,7 +48,18 @@ class GRCState(rx.State):
         self.risks = await db_service.get_risks()
         self.kris = await db_service.get_kris()
         self.kcis = await db_service.get_kcis()
-        self.stats = await db_service.get_dashboard_stats()
+        
+        # Calculate stats
+        stats = await db_service.get_dashboard_stats()
+        self.enabled_frameworks = stats.get("enabled_frameworks", 0)
+        self.total_unified_controls = stats.get("total_unified_controls", 0)
+        self.control_effectiveness = stats.get("control_effectiveness", 0)
+        self.total_tests = stats.get("total_tests", 0)
+        self.passed_tests = stats.get("passed_tests", 0)
+        self.open_issues = stats.get("open_issues", 0)
+        self.total_issues = stats.get("total_issues", 0)
+        self.total_risks = stats.get("total_risks", 0)
+        self.avg_residual_risk = stats.get("avg_residual_risk", 0)
         
         self.loading = False
         yield
@@ -54,6 +67,7 @@ class GRCState(rx.State):
     def set_page(self, page: str):
         """Change current page"""
         self.current_page = page
+
 
 class FrameworkState(GRCState):
     """State for framework management"""
@@ -66,6 +80,7 @@ class FrameworkState(GRCState):
             await db_service.toggle_framework(framework_id, new_status)
             await self.load_all_data()
             yield rx.toast.success(f"Framework {'enabled' if new_status else 'disabled'}")
+
 
 class ControlState(GRCState):
     """State for control management"""
@@ -80,7 +95,23 @@ class ControlState(GRCState):
     show_create_form: bool = False
     
     # Expanded control IDs for viewing mapping details
-    expanded_controls: List[str] = []
+    expanded_controls: list[str] = []
+    
+    # Setters for form fields
+    def set_new_control_ccf_id(self, value: str):
+        self.new_control_ccf_id = value
+    
+    def set_new_control_name(self, value: str):
+        self.new_control_name = value
+    
+    def set_new_control_description(self, value: str):
+        self.new_control_description = value
+    
+    def set_new_control_type(self, value: str):
+        self.new_control_type = value
+    
+    def set_new_control_owner(self, value: str):
+        self.new_control_owner = value
     
     def toggle_create_form(self):
         self.show_create_form = not self.show_create_form
@@ -128,6 +159,7 @@ class ControlState(GRCState):
         await self.load_all_data()
         yield rx.toast.success("Control created successfully")
 
+
 class PolicyState(GRCState):
     """State for policy management"""
     
@@ -137,6 +169,19 @@ class PolicyState(GRCState):
     new_policy_category: str = "Security"
     new_policy_owner: str = ""
     show_policy_form: bool = False
+    
+    # Setters
+    def set_new_policy_id(self, value: str):
+        self.new_policy_id = value
+    
+    def set_new_policy_name(self, value: str):
+        self.new_policy_name = value
+    
+    def set_new_policy_description(self, value: str):
+        self.new_policy_description = value
+    
+    def set_new_policy_owner(self, value: str):
+        self.new_policy_owner = value
     
     def toggle_policy_form(self):
         self.show_policy_form = not self.show_policy_form
@@ -170,6 +215,7 @@ class PolicyState(GRCState):
         await self.load_all_data()
         yield rx.toast.success("Policy created successfully")
 
+
 class RiskState(GRCState):
     """State for risk management"""
     
@@ -180,7 +226,7 @@ class RiskState(GRCState):
     new_risk_residual: float = 3.0
     new_risk_owner: str = ""
     show_risk_form: bool = False
-    ai_suggestions: List[Dict] = []
+    ai_suggestions: list[dict[str, Any]] = []
     show_ai_suggestions: bool = False
     loading_ai: bool = False
     
@@ -199,7 +245,7 @@ class RiskState(GRCState):
         
         yield rx.toast.success("AI suggestions generated")
     
-    def use_ai_suggestion(self, suggestion: Dict):
+    def use_ai_suggestion(self, suggestion: dict):
         """Use an AI-suggested risk"""
         self.new_risk_name = suggestion.get("name", "")
         self.new_risk_description = suggestion.get("description", "")
