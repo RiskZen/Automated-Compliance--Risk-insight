@@ -297,11 +297,10 @@ class RiskState(GRCState):
         self.show_ai_suggestions = False
         self.show_risk_form = True
     
-    async def create_risk(self):
+    def create_risk(self):
         """Create new risk"""
         if not self.new_risk_name:
-            yield rx.toast.error("Please fill required fields")
-            return
+            return rx.toast.error("Please fill required fields")
         
         risk = {
             "id": str(uuid.uuid4()),
@@ -317,7 +316,7 @@ class RiskState(GRCState):
             "created_at": datetime.utcnow().isoformat()
         }
         
-        await db_service.create_risk(risk)
+        db_service.create_risk(risk)
         
         # Reset form
         self.new_risk_name = ""
@@ -325,5 +324,5 @@ class RiskState(GRCState):
         self.new_risk_owner = ""
         self.show_risk_form = False
         
-        await self.load_all_data()
-        yield rx.toast.success("Risk created successfully")
+        self.load_all_data()
+        return rx.toast.success("Risk created successfully")
