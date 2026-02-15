@@ -97,6 +97,10 @@ class ControlState(GRCState):
     # Expanded control IDs for viewing mapping details
     expanded_controls: list[str] = []
     
+    # Selected control for mapping details view
+    selected_control_id: str = ""
+    selected_control_mappings: dict[str, Any] = {}
+    
     # Setters for form fields
     def set_new_control_ccf_id(self, value: str):
         self.new_control_ccf_id = value
@@ -120,8 +124,44 @@ class ControlState(GRCState):
         """Toggle expand/collapse for a control's mapping details"""
         if control_id in self.expanded_controls:
             self.expanded_controls = [c for c in self.expanded_controls if c != control_id]
+            if self.selected_control_id == control_id:
+                self.selected_control_id = ""
+                self.selected_control_mappings = {}
         else:
             self.expanded_controls = self.expanded_controls + [control_id]
+            self.selected_control_id = control_id
+            # Find control and set mapping data
+            for ctrl in self.unified_controls:
+                if ctrl.get("id") == control_id:
+                    self.selected_control_mappings = {
+                        "ccf_id": ctrl.get("ccf_id", ""),
+                        "name": ctrl.get("name", ""),
+                        "control_type": ctrl.get("control_type", ""),
+                        "framework_controls_count": len(ctrl.get("mapped_framework_controls", [])),
+                        "policies_count": len(ctrl.get("mapped_policies", [])),
+                        "framework_controls_text": self._format_framework_controls(ctrl.get("mapped_framework_controls", [])),
+                        "policies_text": self._format_policies(ctrl.get("mapped_policies", [])),
+                        "automation_possible": ctrl.get("automation_possible", False)
+                    }
+                    break
+    
+    def _format_framework_controls(self, controls: list) -> str:
+        """Format framework controls for display"""
+        if not controls:
+            return "No framework controls mapped"
+        lines = []
+        for fc in controls:
+            lines.append(f"• {fc.get('framework', '')} - {fc.get('control_id', '')}: {fc.get('control_name', '')}")
+        return "\n".join(lines)
+    
+    def _format_policies(self, policies: list) -> str:
+        """Format policies for display"""
+        if not policies:
+            return "No policies mapped"
+        lines = []
+        for pol in policies:
+            lines.append(f"• {pol.get('policy_id', '')}: {pol.get('policy_name', '')}")
+        return "\n".join(lines)
     
     def is_control_expanded(self, control_id: str) -> bool:
         """Check if a control is expanded"""
