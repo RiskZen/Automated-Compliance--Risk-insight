@@ -89,7 +89,7 @@ def sidebar() -> rx.Component:
                 ),
                 rx.link(
                     rx.hstack(
-                        rx.icon("alert-triangle", size=20),
+                        rx.icon("triangle-alert", size=20),
                         rx.text("Issues", font_size="14px", font_weight="500"),
                         padding="12px 15px",
                         border_radius="8px",
@@ -218,7 +218,7 @@ def dashboard() -> rx.Component:
                 rx.box(
                     rx.hstack(
                         rx.box(
-                            rx.icon("check-circle-2", size=24, color="#10b981"),
+                            rx.icon("circle-check", size=24, color="#10b981"),
                             bg="#f0fdf4",
                             padding="10px",
                             border_radius="50%"
@@ -241,7 +241,7 @@ def dashboard() -> rx.Component:
                 rx.box(
                     rx.hstack(
                         rx.box(
-                            rx.icon("alert-triangle", size=24, color="#ef4444"),
+                            rx.icon("triangle-alert", size=24, color="#ef4444"),
                             bg="#fef2f2",
                             padding="10px",
                             border_radius="50%"
