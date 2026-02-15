@@ -79,8 +79,22 @@ class ControlState(GRCState):
     new_control_owner: str = ""
     show_create_form: bool = False
     
+    # Expanded control IDs for viewing mapping details
+    expanded_controls: List[str] = []
+    
     def toggle_create_form(self):
         self.show_create_form = not self.show_create_form
+    
+    def toggle_control_details(self, control_id: str):
+        """Toggle expand/collapse for a control's mapping details"""
+        if control_id in self.expanded_controls:
+            self.expanded_controls = [c for c in self.expanded_controls if c != control_id]
+        else:
+            self.expanded_controls = self.expanded_controls + [control_id]
+    
+    def is_control_expanded(self, control_id: str) -> bool:
+        """Check if a control is expanded"""
+        return control_id in self.expanded_controls
     
     async def create_control(self):
         """Create new unified control"""
