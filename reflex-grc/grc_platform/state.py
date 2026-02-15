@@ -35,23 +35,22 @@ class GRCState(rx.State):
     total_risks: int = 0
     avg_residual_risk: float = 0
     
-    async def load_all_data(self):
+    def load_all_data(self):
         """Load all data from database"""
         self.loading = True
-        yield
         
         try:
-            self.frameworks = await db_service.get_frameworks()
-            self.unified_controls = await db_service.get_unified_controls()
-            self.policies = await db_service.get_policies()
-            self.control_tests = await db_service.get_control_tests()
-            self.issues = await db_service.get_issues()
-            self.risks = await db_service.get_risks()
-            self.kris = await db_service.get_kris()
-            self.kcis = await db_service.get_kcis()
+            self.frameworks = db_service.get_frameworks()
+            self.unified_controls = db_service.get_unified_controls()
+            self.policies = db_service.get_policies()
+            self.control_tests = db_service.get_control_tests()
+            self.issues = db_service.get_issues()
+            self.risks = db_service.get_risks()
+            self.kris = db_service.get_kris()
+            self.kcis = db_service.get_kcis()
             
             # Calculate stats
-            stats = await db_service.get_dashboard_stats()
+            stats = db_service.get_dashboard_stats()
             self.enabled_frameworks = stats.get("enabled_frameworks", 0)
             self.total_unified_controls = stats.get("total_unified_controls", 0)
             self.control_effectiveness = stats.get("control_effectiveness", 0)
@@ -65,9 +64,10 @@ class GRCState(rx.State):
             print(f"[DEBUG] Loaded {len(self.frameworks)} frameworks, {len(self.unified_controls)} controls")
         except Exception as e:
             print(f"[ERROR] Failed to load data: {e}")
+            import traceback
+            traceback.print_exc()
         
         self.loading = False
-        yield
     
     def set_page(self, page: str):
         """Change current page"""
