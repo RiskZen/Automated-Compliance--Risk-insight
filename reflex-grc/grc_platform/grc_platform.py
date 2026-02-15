@@ -322,21 +322,12 @@ def dashboard() -> rx.Component:
     )
 
 # Framework Management Page
-@rx.page(route="/frameworks", title="Frameworks - GRC Platform")
+@rx.page(route="/frameworks", title="Frameworks - GRC Platform", on_load=FrameworkState.load_all_data)
 def frameworks() -> rx.Component:
     return layout(
         rx.vstack(
             rx.heading("Framework Management", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
             rx.text("Select compliance frameworks to map and manage", font_size="18px", color="#64748b", margin_bottom="30px"),
-            
-            # Load button to manually trigger load
-            rx.button(
-                "Load Data",
-                on_click=FrameworkState.load_all_data,
-                bg="#3b82f6",
-                color="white",
-                margin_bottom="20px"
-            ),
             
             rx.cond(
                 FrameworkState.loading,
