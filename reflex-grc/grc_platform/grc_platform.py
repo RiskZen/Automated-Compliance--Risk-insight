@@ -400,6 +400,228 @@ def frameworks() -> rx.Component:
         )
     )
 
+# Helper function to render mapping details for a control
+def render_mapping_details(ctrl: Dict) -> rx.Component:
+    """Render the expandable mapping details for a control"""
+    return rx.box(
+        # Mapping Flow Visualization
+        rx.vstack(
+            # Header
+            rx.hstack(
+                rx.icon("git-branch", size=18, color="#8b5cf6"),
+                rx.text("Mapping Details", font_size="16px", font_weight="600", color="#0f172a"),
+                spacing="2"
+            ),
+            
+            # Visual Flow Diagram
+            rx.box(
+                rx.hstack(
+                    # Framework Controls Section
+                    rx.vstack(
+                        rx.hstack(
+                            rx.icon("shield", size=16, color="#3b82f6"),
+                            rx.text("Framework Controls", font_size="12px", font_weight="600", color="#3b82f6"),
+                            spacing="1"
+                        ),
+                        rx.cond(
+                            ctrl["mapped_framework_controls"].length() > 0,
+                            rx.vstack(
+                                rx.foreach(
+                                    ctrl["mapped_framework_controls"],
+                                    lambda fc: rx.box(
+                                        rx.vstack(
+                                            rx.text(fc["framework"], font_size="10px", color="#64748b", font_weight="600"),
+                                            rx.text(fc["control_id"], font_size="13px", font_weight="600", color="#0f172a"),
+                                            rx.text(fc["control_name"], font_size="11px", color="#64748b"),
+                                            spacing="0",
+                                            align_items="start"
+                                        ),
+                                        bg="#eff6ff",
+                                        padding="10px",
+                                        border_radius="8px",
+                                        border="1px solid #bfdbfe",
+                                        width="100%"
+                                    )
+                                ),
+                                spacing="2",
+                                width="100%"
+                            ),
+                            rx.box(
+                                rx.text("No framework controls mapped yet", font_size="12px", color="#94a3b8", font_style="italic"),
+                                bg="#f8fafc",
+                                padding="15px",
+                                border_radius="8px",
+                                border="1px dashed #e2e8f0",
+                                text_align="center"
+                            )
+                        ),
+                        bg="white",
+                        padding="15px",
+                        border_radius="12px",
+                        border="1px solid #e2e8f0",
+                        min_width="220px",
+                        align_items="start"
+                    ),
+                    
+                    # Arrow 1
+                    rx.vstack(
+                        rx.icon("arrow-right", size=24, color="#10b981"),
+                        rx.text("maps to", font_size="10px", color="#64748b"),
+                        spacing="1",
+                        align_items="center",
+                        padding_x="10px"
+                    ),
+                    
+                    # Unified Control (Center)
+                    rx.vstack(
+                        rx.hstack(
+                            rx.icon("target", size=16, color="#10b981"),
+                            rx.text("Unified Control (CCF)", font_size="12px", font_weight="600", color="#10b981"),
+                            spacing="1"
+                        ),
+                        rx.box(
+                            rx.vstack(
+                                rx.badge(ctrl["ccf_id"], color_scheme="green", font_family="monospace"),
+                                rx.text(ctrl["name"], font_size="13px", font_weight="600", color="#0f172a", text_align="center"),
+                                rx.text(f"Type: {ctrl['control_type']}", font_size="11px", color="#64748b"),
+                                spacing="2",
+                                align_items="center"
+                            ),
+                            bg="#f0fdf4",
+                            padding="15px",
+                            border_radius="8px",
+                            border="2px solid #86efac",
+                            width="100%"
+                        ),
+                        bg="white",
+                        padding="15px",
+                        border_radius="12px",
+                        border="2px solid #10b981",
+                        min_width="200px",
+                        align_items="center"
+                    ),
+                    
+                    # Arrow 2
+                    rx.vstack(
+                        rx.icon("arrow-right", size=24, color="#8b5cf6"),
+                        rx.text("implements", font_size="10px", color="#64748b"),
+                        spacing="1",
+                        align_items="center",
+                        padding_x="10px"
+                    ),
+                    
+                    # Policies Section
+                    rx.vstack(
+                        rx.hstack(
+                            rx.icon("file-text", size=16, color="#8b5cf6"),
+                            rx.text("Internal Policies", font_size="12px", font_weight="600", color="#8b5cf6"),
+                            spacing="1"
+                        ),
+                        rx.cond(
+                            ctrl["mapped_policies"].length() > 0,
+                            rx.vstack(
+                                rx.foreach(
+                                    ctrl["mapped_policies"],
+                                    lambda pol: rx.box(
+                                        rx.vstack(
+                                            rx.text(pol["policy_id"], font_size="13px", font_weight="600", color="#0f172a"),
+                                            rx.text(pol["policy_name"], font_size="11px", color="#64748b"),
+                                            spacing="0",
+                                            align_items="start"
+                                        ),
+                                        bg="#faf5ff",
+                                        padding="10px",
+                                        border_radius="8px",
+                                        border="1px solid #e9d5ff",
+                                        width="100%"
+                                    )
+                                ),
+                                spacing="2",
+                                width="100%"
+                            ),
+                            rx.box(
+                                rx.text("No policies mapped yet", font_size="12px", color="#94a3b8", font_style="italic"),
+                                bg="#f8fafc",
+                                padding="15px",
+                                border_radius="8px",
+                                border="1px dashed #e2e8f0",
+                                text_align="center"
+                            )
+                        ),
+                        bg="white",
+                        padding="15px",
+                        border_radius="12px",
+                        border="1px solid #e2e8f0",
+                        min_width="220px",
+                        align_items="start"
+                    ),
+                    
+                    spacing="2",
+                    align_items="center",
+                    justify="center",
+                    width="100%",
+                    overflow_x="auto",
+                    padding="10px"
+                ),
+                bg="#fafafa",
+                padding="15px",
+                border_radius="12px",
+                margin_top="15px"
+            ),
+            
+            # Summary Stats
+            rx.hstack(
+                rx.box(
+                    rx.hstack(
+                        rx.icon("layers", size=16, color="#3b82f6"),
+                        rx.text(f"{ctrl['mapped_framework_controls'].length()} Framework Controls", font_size="13px", color="#64748b"),
+                        spacing="2"
+                    ),
+                    bg="#eff6ff",
+                    padding="8px 12px",
+                    border_radius="6px"
+                ),
+                rx.box(
+                    rx.hstack(
+                        rx.icon("file-check", size=16, color="#8b5cf6"),
+                        rx.text(f"{ctrl['mapped_policies'].length()} Policies", font_size="13px", color="#64748b"),
+                        spacing="2"
+                    ),
+                    bg="#faf5ff",
+                    padding="8px 12px",
+                    border_radius="6px"
+                ),
+                rx.cond(
+                    ctrl["automation_possible"],
+                    rx.box(
+                        rx.hstack(
+                            rx.icon("zap", size=16, color="#f59e0b"),
+                            rx.text("Automation Ready", font_size="13px", color="#64748b"),
+                            spacing="2"
+                        ),
+                        bg="#fffbeb",
+                        padding="8px 12px",
+                        border_radius="6px"
+                    ),
+                    rx.fragment()
+                ),
+                spacing="3",
+                margin_top="15px",
+                flex_wrap="wrap"
+            ),
+            
+            spacing="3",
+            width="100%",
+            align_items="start"
+        ),
+        bg="#f8fafc",
+        padding="20px",
+        border_radius="12px",
+        border="1px solid #e2e8f0",
+        margin_top="15px",
+        width="100%"
+    )
+
 # Control Mapping Page
 @rx.page(route="/controls", title="Control Mapping - GRC Platform", on_load=ControlState.load_all_data)
 def controls() -> rx.Component:
@@ -407,6 +629,25 @@ def controls() -> rx.Component:
         rx.vstack(
             rx.heading("Control Mapping", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
             rx.text("Map framework controls → Unified CCF → Internal policies", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            # Info Banner
+            rx.box(
+                rx.hstack(
+                    rx.icon("info", size=20, color="#3b82f6"),
+                    rx.text(
+                        "Click 'View Mapping' on any control to see the detailed mapping flow from Framework Controls → Unified Control → Policies",
+                        font_size="14px",
+                        color="#1e40af"
+                    ),
+                    spacing="3",
+                    align_items="center"
+                ),
+                bg="#eff6ff",
+                padding="15px 20px",
+                border_radius="10px",
+                border="1px solid #bfdbfe",
+                margin_bottom="25px"
+            ),
             
             # Create Control Button
             rx.box(
@@ -490,33 +731,92 @@ def controls() -> rx.Component:
                     rx.fragment()
                 ),
                 
-                # Controls List
+                # Controls List with Expandable Mapping Details
                 rx.foreach(
                     ControlState.unified_controls,
                     lambda ctrl: rx.box(
                         rx.vstack(
+                            # Control Header
                             rx.hstack(
-                                rx.badge(ctrl["ccf_id"], color_scheme="blue", font_family="monospace"),
-                                rx.text(ctrl["name"], font_size="18px", font_weight="600", color="#0f172a"),
-                                spacing="3"
+                                rx.vstack(
+                                    rx.hstack(
+                                        rx.badge(ctrl["ccf_id"], color_scheme="blue", font_family="monospace"),
+                                        rx.text(ctrl["name"], font_size="18px", font_weight="600", color="#0f172a"),
+                                        spacing="3"
+                                    ),
+                                    rx.text(ctrl["description"], font_size="14px", color="#64748b", margin_top="8px"),
+                                    rx.hstack(
+                                        rx.text(f"Type: {ctrl['control_type']}", font_size="13px", color="#64748b"),
+                                        rx.text(f"Frequency: {ctrl['frequency']}", font_size="13px", color="#64748b"),
+                                        rx.text(f"Owner: {ctrl['owner']}", font_size="13px", color="#64748b"),
+                                        spacing="5",
+                                        margin_top="10px"
+                                    ),
+                                    align_items="start",
+                                    flex="1"
+                                ),
+                                # Toggle Button for Mapping Details
+                                rx.button(
+                                    rx.cond(
+                                        ControlState.expanded_controls.contains(ctrl["id"]),
+                                        rx.hstack(
+                                            rx.icon("chevron-up", size=18),
+                                            rx.text("Hide Mapping"),
+                                            spacing="2"
+                                        ),
+                                        rx.hstack(
+                                            rx.icon("chevron-down", size=18),
+                                            rx.text("View Mapping"),
+                                            spacing="2"
+                                        )
+                                    ),
+                                    on_click=ControlState.toggle_control_details(ctrl["id"]),
+                                    bg=rx.cond(
+                                        ControlState.expanded_controls.contains(ctrl["id"]),
+                                        "#f0fdf4",
+                                        "#f8fafc"
+                                    ),
+                                    color=rx.cond(
+                                        ControlState.expanded_controls.contains(ctrl["id"]),
+                                        "#10b981",
+                                        "#64748b"
+                                    ),
+                                    border=rx.cond(
+                                        ControlState.expanded_controls.contains(ctrl["id"]),
+                                        "1px solid #86efac",
+                                        "1px solid #e2e8f0"
+                                    ),
+                                    _hover={"bg": "#f0fdf4", "color": "#10b981"},
+                                    padding="10px 16px",
+                                    border_radius="8px",
+                                    font_weight="500",
+                                    font_size="13px"
+                                ),
+                                width="100%",
+                                align_items="start"
                             ),
-                            rx.text(ctrl["description"], font_size="14px", color="#64748b", margin_top="8px"),
-                            rx.hstack(
-                                rx.text(f"Type: {ctrl['control_type']}", font_size="13px", color="#64748b"),
-                                rx.text(f"Frequency: {ctrl['frequency']}", font_size="13px", color="#64748b"),
-                                rx.text(f"Owner: {ctrl['owner']}", font_size="13px", color="#64748b"),
-                                spacing="5",
-                                margin_top="10px"
+                            
+                            # Expandable Mapping Details
+                            rx.cond(
+                                ControlState.expanded_controls.contains(ctrl["id"]),
+                                render_mapping_details(ctrl),
+                                rx.fragment()
                             ),
+                            
                             align_items="start",
                             width="100%"
                         ),
                         bg="white",
                         padding="20px",
                         border_radius="12px",
-                        border="1px solid #e2e8f0",
+                        border=rx.cond(
+                            ControlState.expanded_controls.contains(ctrl["id"]),
+                            "2px solid #10b981",
+                            "1px solid #e2e8f0"
+                        ),
                         margin_bottom="15px",
-                        _hover={"border_color": "#3b82f6", "box_shadow": "md"}
+                        _hover={"box_shadow": "md"},
+                        transition="all 0.2s ease"
                     )
                 ),
                 
