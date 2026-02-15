@@ -4,10 +4,13 @@ from typing import List, Dict, Optional
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from the reflex-grc directory
+load_dotenv("/app/reflex-grc/.env")
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = os.getenv("DB_NAME", "grc_reflex_db")
+
+print(f"[DB] Connecting to MongoDB: {MONGO_URL}, DB: {DB_NAME}")
 
 class DatabaseService:
     _instance = None
@@ -20,13 +23,14 @@ class DatabaseService:
         return cls._instance
     
     def __init__(self):
-        if self._client is None:
-            self._client = AsyncIOMotorClient(MONGO_URL)
-            self._db = self._client[DB_NAME]
+        if DatabaseService._client is None:
+            DatabaseService._client = AsyncIOMotorClient(MONGO_URL)
+            DatabaseService._db = DatabaseService._client[DB_NAME]
+            print(f"[DB] Connected to database: {DB_NAME}")
     
     @property
     def db(self):
-        return self._db
+        return DatabaseService._db
     
     # Frameworks
     async def get_frameworks(self) -> List[Dict]:
