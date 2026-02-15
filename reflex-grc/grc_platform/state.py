@@ -230,11 +230,10 @@ class PolicyState(GRCState):
     def toggle_policy_form(self):
         self.show_policy_form = not self.show_policy_form
     
-    async def create_policy(self):
+    def create_policy(self):
         """Create new policy"""
         if not self.new_policy_name or not self.new_policy_id:
-            yield rx.toast.error("Please fill required fields")
-            return
+            return rx.toast.error("Please fill required fields")
         
         policy = {
             "id": str(uuid.uuid4()),
@@ -247,7 +246,7 @@ class PolicyState(GRCState):
             "created_at": datetime.utcnow().isoformat()
         }
         
-        await db_service.create_policy(policy)
+        db_service.create_policy(policy)
         
         # Reset form
         self.new_policy_id = ""
@@ -256,8 +255,8 @@ class PolicyState(GRCState):
         self.new_policy_owner = ""
         self.show_policy_form = False
         
-        await self.load_all_data()
-        yield rx.toast.success("Policy created successfully")
+        self.load_all_data()
+        return rx.toast.success("Policy created successfully")
 
 
 class RiskState(GRCState):
