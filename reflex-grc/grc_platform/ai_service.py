@@ -23,7 +23,7 @@ class GeminiAIService:
         else:
             self.model = None
     
-    async def get_risk_suggestions(self, industry: str = "General") -> list:
+    def get_risk_suggestions(self, industry: str = "General") -> list:
         """Get AI-powered top 10 risk suggestions"""
         if not self.model:
             return self._get_fallback_risks()
