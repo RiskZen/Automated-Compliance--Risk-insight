@@ -1,5 +1,6 @@
 """Main GRC Platform Application - Pure Python with Reflex"""
 import reflex as rx
+from typing import Dict
 from .state import GRCState, FrameworkState, ControlState, PolicyState, RiskState
 
 # Sidebar Component
