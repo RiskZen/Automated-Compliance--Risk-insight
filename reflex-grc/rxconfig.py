@@ -6,4 +6,5 @@ config = rx.Config(
     env=rx.Env.DEV,
     frontend_port=3000,
     backend_port=8001,
+    api_url="https://risk-control-lab.preview.emergentagent.com:8001",
 )
