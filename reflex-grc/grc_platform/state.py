@@ -77,14 +77,14 @@ class GRCState(rx.State):
 class FrameworkState(GRCState):
     """State for framework management"""
     
-    async def toggle_framework(self, framework_id: str):
+    def toggle_framework(self, framework_id: str):
         """Enable/disable a framework"""
         framework = next((f for f in self.frameworks if f["id"] == framework_id), None)
         if framework:
             new_status = not framework.get("enabled", False)
-            await db_service.toggle_framework(framework_id, new_status)
-            await self.load_all_data()
-            yield rx.toast.success(f"Framework {'enabled' if new_status else 'disabled'}")
+            db_service.toggle_framework(framework_id, new_status)
+            self.load_all_data()
+            return rx.toast.success(f"Framework {'enabled' if new_status else 'disabled'}")
 
 
 class ControlState(GRCState):
