@@ -172,11 +172,10 @@ class ControlState(GRCState):
         """Check if a control is expanded"""
         return control_id in self.expanded_controls
     
-    async def create_control(self):
+    def create_control(self):
         """Create new unified control"""
         if not self.new_control_name or not self.new_control_ccf_id:
-            yield rx.toast.error("Please fill required fields")
-            return
+            return rx.toast.error("Please fill required fields")
         
         control = {
             "id": str(uuid.uuid4()),
@@ -192,7 +191,7 @@ class ControlState(GRCState):
             "created_at": datetime.utcnow().isoformat()
         }
         
-        await db_service.create_unified_control(control)
+        db_service.create_unified_control(control)
         
         # Reset form
         self.new_control_ccf_id = ""
@@ -201,8 +200,8 @@ class ControlState(GRCState):
         self.new_control_owner = ""
         self.show_create_form = False
         
-        await self.load_all_data()
-        yield rx.toast.success("Control created successfully")
+        self.load_all_data()
+        return rx.toast.success("Control created successfully")
 
 
 class PolicyState(GRCState):
