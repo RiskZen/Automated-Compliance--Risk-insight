@@ -40,26 +40,31 @@ class GRCState(rx.State):
         self.loading = True
         yield
         
-        self.frameworks = await db_service.get_frameworks()
-        self.unified_controls = await db_service.get_unified_controls()
-        self.policies = await db_service.get_policies()
-        self.control_tests = await db_service.get_control_tests()
-        self.issues = await db_service.get_issues()
-        self.risks = await db_service.get_risks()
-        self.kris = await db_service.get_kris()
-        self.kcis = await db_service.get_kcis()
-        
-        # Calculate stats
-        stats = await db_service.get_dashboard_stats()
-        self.enabled_frameworks = stats.get("enabled_frameworks", 0)
-        self.total_unified_controls = stats.get("total_unified_controls", 0)
-        self.control_effectiveness = stats.get("control_effectiveness", 0)
-        self.total_tests = stats.get("total_tests", 0)
-        self.passed_tests = stats.get("passed_tests", 0)
-        self.open_issues = stats.get("open_issues", 0)
-        self.total_issues = stats.get("total_issues", 0)
-        self.total_risks = stats.get("total_risks", 0)
-        self.avg_residual_risk = stats.get("avg_residual_risk", 0)
+        try:
+            self.frameworks = await db_service.get_frameworks()
+            self.unified_controls = await db_service.get_unified_controls()
+            self.policies = await db_service.get_policies()
+            self.control_tests = await db_service.get_control_tests()
+            self.issues = await db_service.get_issues()
+            self.risks = await db_service.get_risks()
+            self.kris = await db_service.get_kris()
+            self.kcis = await db_service.get_kcis()
+            
+            # Calculate stats
+            stats = await db_service.get_dashboard_stats()
+            self.enabled_frameworks = stats.get("enabled_frameworks", 0)
+            self.total_unified_controls = stats.get("total_unified_controls", 0)
+            self.control_effectiveness = stats.get("control_effectiveness", 0)
+            self.total_tests = stats.get("total_tests", 0)
+            self.passed_tests = stats.get("passed_tests", 0)
+            self.open_issues = stats.get("open_issues", 0)
+            self.total_issues = stats.get("total_issues", 0)
+            self.total_risks = stats.get("total_risks", 0)
+            self.avg_residual_risk = stats.get("avg_residual_risk", 0)
+            
+            print(f"[DEBUG] Loaded {len(self.frameworks)} frameworks, {len(self.unified_controls)} controls")
+        except Exception as e:
+            print(f"[ERROR] Failed to load data: {e}")
         
         self.loading = False
         yield
