@@ -206,7 +206,7 @@ def dashboard() -> rx.Component:
                     ),
                     rx.text("Enabled Frameworks", font_size="14px", color="#64748b", margin_bottom="5px"),
                     rx.text(GRCState.stats["enabled_frameworks"], font_size="36px", font_weight="bold", color="#0f172a"),
-                    rx.text(f"{len(GRCState.unified_controls)} unified controls", font_size="12px", color="#64748b", margin_top="5px"),
+                    rx.text(GRCState.unified_controls.length().to_string() + " unified controls", font_size="12px", color="#64748b", margin_top="5px"),
                     bg="white",
                     padding="24px",
                     border_radius="12px",
