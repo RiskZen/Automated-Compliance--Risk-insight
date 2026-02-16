@@ -1,7 +1,10 @@
 """Main GRC Platform Application - Pure Python with Reflex"""
 import reflex as rx
 from typing import Dict, Any
-from .state import GRCState, FrameworkState, ControlState, PolicyState, RiskState
+from .state import (
+    GRCState, FrameworkState, ControlState, PolicyState, RiskState,
+    TestingState, IssueState, KRIState, KCIState, HeatmapState
+)
 
 # Sidebar Component
 def sidebar() -> rx.Component:
