@@ -1503,9 +1503,9 @@ def kris() -> rx.Component:
                                 on_change=KRIState.set_new_kri_description,
                                 width="100%"
                             ),
-                            rx.select(
-                                KRIState.risks.to(list).map(lambda r: r["id"] + " - " + r["name"]),
-                                placeholder="Link to Risk",
+                            rx.input(
+                                placeholder="Risk ID (e.g., risk-001)",
+                                value=KRIState.new_kri_risk_id,
                                 on_change=KRIState.set_new_kri_risk_id,
                                 width="100%"
                             ),
