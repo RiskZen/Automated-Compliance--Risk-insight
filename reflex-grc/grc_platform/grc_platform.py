@@ -1037,7 +1037,7 @@ def testing() -> rx.Component:
                 rx.box(
                     rx.hstack(
                         rx.box(
-                            rx.icon("x-circle", size=24, color="#ef4444"),
+                            rx.icon("circle-x", size=24, color="#ef4444"),
                             bg="#fef2f2",
                             padding="10px",
                             border_radius="50%"
