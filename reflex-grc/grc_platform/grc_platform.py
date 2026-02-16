@@ -140,6 +140,18 @@ def sidebar() -> rx.Component:
                     href="/kcis",
                     style={"text_decoration": "none", "color": "#cbd5e1"}
                 ),
+                rx.link(
+                    rx.hstack(
+                        rx.icon("flame", size=20),
+                        rx.text("Risk Heatmap", font_size="14px", font_weight="500"),
+                        padding="12px 15px",
+                        border_radius="8px",
+                        _hover={"bg": "#1e293b"},
+                        width="100%"
+                    ),
+                    href="/heatmap",
+                    style={"text_decoration": "none", "color": "#cbd5e1"}
+                ),
                 
                 spacing="2",
                 width="100%",
