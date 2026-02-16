@@ -326,3 +326,339 @@ class RiskState(GRCState):
         
         self.load_all_data()
         return rx.toast.success("Risk created successfully")
+
+
+
+class TestingState(GRCState):
+    """State for control testing management"""
+    
+    new_test_control_id: str = ""
+    new_test_date: str = ""
+    new_test_tester: str = ""
+    new_test_result: str = "Pass"
+    new_test_evidence: str = ""
+    new_test_notes: str = ""
+    show_test_form: bool = False
+    
+    def set_new_test_control_id(self, value: str):
+        self.new_test_control_id = value
+    
+    def set_new_test_date(self, value: str):
+        self.new_test_date = value
+    
+    def set_new_test_tester(self, value: str):
+        self.new_test_tester = value
+    
+    def set_new_test_result(self, value: str):
+        self.new_test_result = value
+    
+    def set_new_test_evidence(self, value: str):
+        self.new_test_evidence = value
+    
+    def set_new_test_notes(self, value: str):
+        self.new_test_notes = value
+    
+    def toggle_test_form(self):
+        self.show_test_form = not self.show_test_form
+    
+    def create_control_test(self):
+        """Create new control test"""
+        if not self.new_test_control_id or not self.new_test_tester:
+            return rx.toast.error("Please fill required fields")
+        
+        # Find control ccf_id
+        control = next((c for c in self.unified_controls if c["id"] == self.new_test_control_id), None)
+        ccf_id = control.get("ccf_id", "") if control else ""
+        
+        test = {
+            "id": str(uuid.uuid4()),
+            "control_id": self.new_test_control_id,
+            "control_ccf_id": ccf_id,
+            "test_date": self.new_test_date or datetime.utcnow().strftime("%Y-%m-%d"),
+            "tester": self.new_test_tester,
+            "result": self.new_test_result,
+            "evidence": self.new_test_evidence,
+            "notes": self.new_test_notes,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        db_service.create_control_test(test)
+        
+        # Reset form
+        self.new_test_control_id = ""
+        self.new_test_date = ""
+        self.new_test_tester = ""
+        self.new_test_result = "Pass"
+        self.new_test_evidence = ""
+        self.new_test_notes = ""
+        self.show_test_form = False
+        
+        self.load_all_data()
+        return rx.toast.success("Control test recorded successfully")
+
+
+class IssueState(GRCState):
+    """State for issue management"""
+    
+    new_issue_title: str = ""
+    new_issue_description: str = ""
+    new_issue_severity: str = "Medium"
+    new_issue_control_id: str = ""
+    new_issue_assigned_to: str = ""
+    new_issue_due_date: str = ""
+    show_issue_form: bool = False
+    
+    def set_new_issue_title(self, value: str):
+        self.new_issue_title = value
+    
+    def set_new_issue_description(self, value: str):
+        self.new_issue_description = value
+    
+    def set_new_issue_severity(self, value: str):
+        self.new_issue_severity = value
+    
+    def set_new_issue_control_id(self, value: str):
+        self.new_issue_control_id = value
+    
+    def set_new_issue_assigned_to(self, value: str):
+        self.new_issue_assigned_to = value
+    
+    def set_new_issue_due_date(self, value: str):
+        self.new_issue_due_date = value
+    
+    def toggle_issue_form(self):
+        self.show_issue_form = not self.show_issue_form
+    
+    def create_issue(self):
+        """Create new issue"""
+        if not self.new_issue_title:
+            return rx.toast.error("Please fill required fields")
+        
+        issue = {
+            "id": str(uuid.uuid4()),
+            "title": self.new_issue_title,
+            "description": self.new_issue_description,
+            "severity": self.new_issue_severity,
+            "status": "Open",
+            "control_id": self.new_issue_control_id,
+            "assigned_to": self.new_issue_assigned_to,
+            "due_date": self.new_issue_due_date,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        db_service.create_issue(issue)
+        
+        # Reset form
+        self.new_issue_title = ""
+        self.new_issue_description = ""
+        self.new_issue_severity = "Medium"
+        self.new_issue_control_id = ""
+        self.new_issue_assigned_to = ""
+        self.new_issue_due_date = ""
+        self.show_issue_form = False
+        
+        self.load_all_data()
+        return rx.toast.success("Issue created successfully")
+    
+    def update_issue_status(self, issue_id: str, new_status: str):
+        """Update issue status"""
+        db_service.update_issue_status(issue_id, new_status)
+        self.load_all_data()
+        return rx.toast.success(f"Issue marked as {new_status}")
+
+
+class KRIState(GRCState):
+    """State for KRI management"""
+    
+    new_kri_name: str = ""
+    new_kri_description: str = ""
+    new_kri_risk_id: str = ""
+    new_kri_threshold_green: int = 0
+    new_kri_threshold_yellow: int = 5
+    new_kri_threshold_red: int = 10
+    new_kri_current_value: int = 0
+    new_kri_unit: str = "Count"
+    new_kri_frequency: str = "Monthly"
+    new_kri_owner: str = ""
+    show_kri_form: bool = False
+    
+    def set_new_kri_name(self, value: str):
+        self.new_kri_name = value
+    
+    def set_new_kri_description(self, value: str):
+        self.new_kri_description = value
+    
+    def set_new_kri_risk_id(self, value: str):
+        self.new_kri_risk_id = value
+    
+    def set_new_kri_threshold_green(self, value: str):
+        self.new_kri_threshold_green = int(value) if value else 0
+    
+    def set_new_kri_threshold_yellow(self, value: str):
+        self.new_kri_threshold_yellow = int(value) if value else 5
+    
+    def set_new_kri_threshold_red(self, value: str):
+        self.new_kri_threshold_red = int(value) if value else 10
+    
+    def set_new_kri_current_value(self, value: str):
+        self.new_kri_current_value = int(value) if value else 0
+    
+    def set_new_kri_unit(self, value: str):
+        self.new_kri_unit = value
+    
+    def set_new_kri_frequency(self, value: str):
+        self.new_kri_frequency = value
+    
+    def set_new_kri_owner(self, value: str):
+        self.new_kri_owner = value
+    
+    def toggle_kri_form(self):
+        self.show_kri_form = not self.show_kri_form
+    
+    def create_kri(self):
+        """Create new KRI"""
+        if not self.new_kri_name or not self.new_kri_risk_id:
+            return rx.toast.error("Please fill required fields")
+        
+        kri = {
+            "id": str(uuid.uuid4()),
+            "name": self.new_kri_name,
+            "description": self.new_kri_description,
+            "risk_id": self.new_kri_risk_id,
+            "threshold_green": self.new_kri_threshold_green,
+            "threshold_yellow": self.new_kri_threshold_yellow,
+            "threshold_red": self.new_kri_threshold_red,
+            "current_value": self.new_kri_current_value,
+            "unit": self.new_kri_unit,
+            "frequency": self.new_kri_frequency,
+            "owner": self.new_kri_owner,
+            "kci_ids": [],
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        db_service.create_kri(kri)
+        
+        # Reset form
+        self.new_kri_name = ""
+        self.new_kri_description = ""
+        self.new_kri_risk_id = ""
+        self.new_kri_threshold_green = 0
+        self.new_kri_threshold_yellow = 5
+        self.new_kri_threshold_red = 10
+        self.new_kri_current_value = 0
+        self.new_kri_owner = ""
+        self.show_kri_form = False
+        
+        self.load_all_data()
+        return rx.toast.success("KRI created successfully")
+
+
+class KCIState(GRCState):
+    """State for KCI management"""
+    
+    new_kci_name: str = ""
+    new_kci_description: str = ""
+    new_kci_kri_id: str = ""
+    new_kci_control_id: str = ""
+    new_kci_threshold_green: int = 95
+    new_kci_threshold_yellow: int = 85
+    new_kci_threshold_red: int = 75
+    new_kci_current_value: int = 100
+    new_kci_unit: str = "Percentage"
+    new_kci_frequency: str = "Monthly"
+    new_kci_owner: str = ""
+    show_kci_form: bool = False
+    
+    def set_new_kci_name(self, value: str):
+        self.new_kci_name = value
+    
+    def set_new_kci_description(self, value: str):
+        self.new_kci_description = value
+    
+    def set_new_kci_kri_id(self, value: str):
+        self.new_kci_kri_id = value
+    
+    def set_new_kci_control_id(self, value: str):
+        self.new_kci_control_id = value
+    
+    def set_new_kci_threshold_green(self, value: str):
+        self.new_kci_threshold_green = int(value) if value else 95
+    
+    def set_new_kci_threshold_yellow(self, value: str):
+        self.new_kci_threshold_yellow = int(value) if value else 85
+    
+    def set_new_kci_threshold_red(self, value: str):
+        self.new_kci_threshold_red = int(value) if value else 75
+    
+    def set_new_kci_current_value(self, value: str):
+        self.new_kci_current_value = int(value) if value else 100
+    
+    def set_new_kci_unit(self, value: str):
+        self.new_kci_unit = value
+    
+    def set_new_kci_frequency(self, value: str):
+        self.new_kci_frequency = value
+    
+    def set_new_kci_owner(self, value: str):
+        self.new_kci_owner = value
+    
+    def toggle_kci_form(self):
+        self.show_kci_form = not self.show_kci_form
+    
+    def create_kci(self):
+        """Create new KCI"""
+        if not self.new_kci_name or not self.new_kci_kri_id:
+            return rx.toast.error("Please fill required fields")
+        
+        kci = {
+            "id": str(uuid.uuid4()),
+            "name": self.new_kci_name,
+            "description": self.new_kci_description,
+            "kri_id": self.new_kci_kri_id,
+            "control_id": self.new_kci_control_id,
+            "threshold_green": self.new_kci_threshold_green,
+            "threshold_yellow": self.new_kci_threshold_yellow,
+            "threshold_red": self.new_kci_threshold_red,
+            "current_value": self.new_kci_current_value,
+            "unit": self.new_kci_unit,
+            "frequency": self.new_kci_frequency,
+            "owner": self.new_kci_owner,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        db_service.create_kci(kci)
+        
+        # Reset form
+        self.new_kci_name = ""
+        self.new_kci_description = ""
+        self.new_kci_kri_id = ""
+        self.new_kci_control_id = ""
+        self.new_kci_threshold_green = 95
+        self.new_kci_threshold_yellow = 85
+        self.new_kci_threshold_red = 75
+        self.new_kci_current_value = 100
+        self.new_kci_owner = ""
+        self.show_kci_form = False
+        
+        self.load_all_data()
+        return rx.toast.success("KCI created successfully")
+
+
+class HeatmapState(GRCState):
+    """State for risk heatmap visualization"""
+    
+    # Computed properties for heatmap data
+    def get_risk_matrix_data(self) -> list[dict[str, Any]]:
+        """Get risk data formatted for matrix heatmap"""
+        matrix_data = []
+        for risk in self.risks:
+            impact = min(int(risk.get("inherent_risk_score", 5)), 10)
+            likelihood = min(int(risk.get("residual_risk_score", 5) / risk.get("inherent_risk_score", 5) * 10) if risk.get("inherent_risk_score", 0) > 0 else 5, 10)
+            matrix_data.append({
+                "name": risk.get("name", ""),
+                "impact": impact,
+                "likelihood": likelihood,
+                "score": risk.get("residual_risk_score", 0),
+                "category": risk.get("category", "")
+            })
+        return matrix_data
