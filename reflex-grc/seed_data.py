@@ -100,7 +100,7 @@ def seed_database():
             ]
         }
     ]
-    await db.frameworks.insert_many(frameworks)
+    db.frameworks.insert_many(frameworks)
     
     # ========== POLICIES ==========
     print("📜 Seeding Policies...")
@@ -171,7 +171,7 @@ def seed_database():
             "created_at": datetime.utcnow().isoformat()
         }
     ]
-    await db.policies.insert_many(policies)
+    db.policies.insert_many(policies)
     
     # ========== UNIFIED CONTROLS (CCF) with MAPPINGS ==========
     print("🎯 Seeding Unified Controls with Mappings...")
@@ -311,7 +311,7 @@ def seed_database():
             "created_at": datetime.utcnow().isoformat()
         }
     ]
-    await db.unified_controls.insert_many(unified_controls)
+    db.unified_controls.insert_many(unified_controls)
     
     # ========== CONTROL TESTS ==========
     print("✅ Seeding Control Tests...")
@@ -383,7 +383,7 @@ def seed_database():
             "created_at": datetime.utcnow().isoformat()
         }
     ]
-    await db.control_tests.insert_many(control_tests)
+    db.control_tests.insert_many(control_tests)
     
     # ========== ISSUES ==========
     print("⚠️  Seeding Issues...")
@@ -435,7 +435,7 @@ def seed_database():
             "created_at": datetime.utcnow().isoformat()
         }
     ]
-    await db.issues.insert_many(issues)
+    db.issues.insert_many(issues)
     
     # ========== RISKS ==========
     print("📊 Seeding Risks...")
@@ -497,7 +497,7 @@ def seed_database():
             "created_at": datetime.utcnow().isoformat()
         }
     ]
-    await db.risks.insert_many(risks)
+    db.risks.insert_many(risks)
     
     # ========== KRIs ==========
     print("📈 Seeding KRIs...")
@@ -578,7 +578,7 @@ def seed_database():
             "created_at": datetime.utcnow().isoformat()
         }
     ]
-    await db.kris.insert_many(kris)
+    db.kris.insert_many(kris)
     
     # ========== KCIs ==========
     print("🎯 Seeding KCIs...")
@@ -659,7 +659,7 @@ def seed_database():
             "created_at": datetime.utcnow().isoformat()
         }
     ]
-    await db.kcis.insert_many(kcis)
+    db.kcis.insert_many(kcis)
     
     print("\n✨ Database seeding complete!")
     print("=" * 50)
@@ -676,4 +676,4 @@ def seed_database():
     client.close()
 
 if __name__ == "__main__":
-    asyncio.run(seed_database())
+    seed_database()
