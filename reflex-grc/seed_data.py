@@ -1,6 +1,5 @@
 """Seed script to populate GRC database with sample data including mappings"""
-import asyncio
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -11,20 +10,20 @@ load_dotenv()
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = os.getenv("DB_NAME", "grc_reflex_db")
 
-async def seed_database():
+def seed_database():
     """Seed the database with comprehensive GRC data"""
-    client = AsyncIOMotorClient(MONGO_URL)
+    client = MongoClient(MONGO_URL)
     db = client[DB_NAME]
     
     print("🗑️  Clearing existing data...")
-    await db.frameworks.delete_many({})
-    await db.unified_controls.delete_many({})
-    await db.policies.delete_many({})
-    await db.control_tests.delete_many({})
-    await db.issues.delete_many({})
-    await db.risks.delete_many({})
-    await db.kris.delete_many({})
-    await db.kcis.delete_many({})
+    db.frameworks.delete_many({})
+    db.unified_controls.delete_many({})
+    db.policies.delete_many({})
+    db.control_tests.delete_many({})
+    db.issues.delete_many({})
+    db.risks.delete_many({})
+    db.kris.delete_many({})
+    db.kcis.delete_many({})
     
     # ========== FRAMEWORKS ==========
     print("📦 Seeding Frameworks...")
