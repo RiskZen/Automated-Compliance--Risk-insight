@@ -1884,81 +1884,161 @@ def heatmap() -> rx.Component:
                     ),
                     rx.text("Visual flow: Risks → KRIs → KCIs → Controls", font_size="14px", color="#64748b", margin_bottom="20px"),
                     
-                    # Network Visualization
-                    rx.foreach(
-                        HeatmapState.risks,
-                        lambda risk: rx.box(
-                            rx.vstack(
-                                # Risk Node
-                                rx.box(
-                                    rx.hstack(
-                                        rx.icon("alert-triangle", size=20, color="white"),
-                                        rx.text(risk["name"], font_size="14px", font_weight="600", color="white"),
-                                        spacing="2"
+                    # Network Visualization - Simplified 3-column layout
+                    rx.grid(
+                        # Column 1: Risks
+                        rx.vstack(
+                            rx.hstack(
+                                rx.icon("alert-triangle", size=20, color="#ef4444"),
+                                rx.text("RISKS", font_size="14px", font_weight="700", color="#ef4444"),
+                                spacing="2"
+                            ),
+                            rx.foreach(
+                                HeatmapState.risks,
+                                lambda risk: rx.box(
+                                    rx.vstack(
+                                        rx.text(risk["name"], font_size="13px", font_weight="600", color="white"),
+                                        rx.text("Score: " + risk["residual_risk_score"].to_string(), font_size="11px", color="rgba(255,255,255,0.8)"),
+                                        spacing="1",
+                                        align_items="start"
                                     ),
                                     bg=rx.cond(
                                         risk["residual_risk_score"] >= 7, "#ef4444",
                                         rx.cond(risk["residual_risk_score"] >= 4, "#f59e0b", "#10b981")
                                     ),
-                                    padding="12px 20px",
+                                    padding="12px 16px",
                                     border_radius="8px",
-                                    box_shadow="md"
-                                ),
-                                
-                                # Connector Line
-                                rx.box(
-                                    width="2px",
-                                    height="30px",
-                                    bg="#e2e8f0"
-                                ),
-                                
-                                # KRIs linked to this risk
-                                rx.hstack(
-                                    rx.foreach(
-                                        HeatmapState.kris.to(list).filter(lambda k: k["risk_id"] == risk["id"]),
-                                        lambda kri: rx.vstack(
-                                            rx.box(
-                                                rx.text(kri["name"], font_size="12px", font_weight="500", color="#1e40af"),
-                                                bg="#eff6ff",
-                                                padding="8px 14px",
-                                                border_radius="6px",
-                                                border="1px solid #bfdbfe"
-                                            ),
-                                            rx.box(width="2px", height="20px", bg="#e2e8f0"),
-                                            # KCIs linked to this KRI
-                                            rx.hstack(
-                                                rx.foreach(
-                                                    HeatmapState.kcis.to(list).filter(lambda c: c["kri_id"] == kri["id"]),
-                                                    lambda kci: rx.box(
-                                                        rx.text(kci["name"], font_size="11px", color="#6b21a8"),
-                                                        bg="#faf5ff",
-                                                        padding="6px 10px",
-                                                        border_radius="4px",
-                                                        border="1px solid #e9d5ff"
-                                                    )
-                                                ),
-                                                spacing="2",
-                                                flex_wrap="wrap"
-                                            ),
-                                            align_items="center",
-                                            spacing="2"
-                                        )
-                                    ),
-                                    spacing="4",
-                                    flex_wrap="wrap",
-                                    justify="center"
-                                ),
-                                
-                                align_items="center",
-                                spacing="2",
-                                padding="20px",
-                                width="100%"
+                                    width="100%",
+                                    margin_bottom="8px"
+                                )
                             ),
-                            bg="#fafafa",
-                            border_radius="12px",
-                            border="1px solid #e2e8f0",
-                            margin_bottom="20px"
-                        )
+                            spacing="3",
+                            align_items="stretch",
+                            width="100%"
+                        ),
+                        
+                        # Column 2: KRIs
+                        rx.vstack(
+                            rx.hstack(
+                                rx.icon("bar-chart-3", size=20, color="#3b82f6"),
+                                rx.text("KRIs", font_size="14px", font_weight="700", color="#3b82f6"),
+                                spacing="2"
+                            ),
+                            rx.foreach(
+                                HeatmapState.kris,
+                                lambda kri: rx.box(
+                                    rx.vstack(
+                                        rx.text(kri["name"], font_size="13px", font_weight="600", color="#1e40af"),
+                                        rx.hstack(
+                                            rx.text("Value: " + kri["current_value"].to_string(), font_size="11px", color="#64748b"),
+                                            rx.text(kri["unit"], font_size="10px", color="#94a3b8"),
+                                            spacing="1"
+                                        ),
+                                        spacing="1",
+                                        align_items="start"
+                                    ),
+                                    bg="#eff6ff",
+                                    padding="12px 16px",
+                                    border_radius="8px",
+                                    border="1px solid #bfdbfe",
+                                    width="100%",
+                                    margin_bottom="8px"
+                                )
+                            ),
+                            spacing="3",
+                            align_items="stretch",
+                            width="100%"
+                        ),
+                        
+                        # Column 3: KCIs
+                        rx.vstack(
+                            rx.hstack(
+                                rx.icon("target", size=20, color="#8b5cf6"),
+                                rx.text("KCIs", font_size="14px", font_weight="700", color="#8b5cf6"),
+                                spacing="2"
+                            ),
+                            rx.foreach(
+                                HeatmapState.kcis,
+                                lambda kci: rx.box(
+                                    rx.vstack(
+                                        rx.text(kci["name"], font_size="13px", font_weight="600", color="#6b21a8"),
+                                        rx.hstack(
+                                            rx.text("Value: " + kci["current_value"].to_string(), font_size="11px", color="#64748b"),
+                                            rx.text(kci["unit"], font_size="10px", color="#94a3b8"),
+                                            spacing="1"
+                                        ),
+                                        spacing="1",
+                                        align_items="start"
+                                    ),
+                                    bg="#faf5ff",
+                                    padding="12px 16px",
+                                    border_radius="8px",
+                                    border="1px solid #e9d5ff",
+                                    width="100%",
+                                    margin_bottom="8px"
+                                )
+                            ),
+                            spacing="3",
+                            align_items="stretch",
+                            width="100%"
+                        ),
+                        
+                        columns="3",
+                        spacing="6",
+                        width="100%"
+                    ),
+                    
+                    # Flow arrows
+                    rx.hstack(
+                        rx.box(
+                            rx.hstack(
+                                rx.icon("alert-triangle", size=16, color="#ef4444"),
+                                rx.text("Risks", font_size="12px", color="#64748b"),
+                                spacing="1"
+                            ),
+                            padding="8px 12px",
+                            bg="#fef2f2",
+                            border_radius="6px"
+                        ),
+                        rx.icon("arrow-right", size=20, color="#64748b"),
+                        rx.box(
+                            rx.hstack(
+                                rx.icon("bar-chart-3", size=16, color="#3b82f6"),
+                                rx.text("KRIs", font_size="12px", color="#64748b"),
+                                spacing="1"
+                            ),
+                            padding="8px 12px",
+                            bg="#eff6ff",
+                            border_radius="6px"
+                        ),
+                        rx.icon("arrow-right", size=20, color="#64748b"),
+                        rx.box(
+                            rx.hstack(
+                                rx.icon("target", size=16, color="#8b5cf6"),
+                                rx.text("KCIs", font_size="12px", color="#64748b"),
+                                spacing="1"
+                            ),
+                            padding="8px 12px",
+                            bg="#faf5ff",
+                            border_radius="6px"
+                        ),
+                        rx.icon("arrow-right", size=20, color="#64748b"),
+                        rx.box(
+                            rx.hstack(
+                                rx.icon("shield", size=16, color="#10b981"),
+                                rx.text("Controls", font_size="12px", color="#64748b"),
+                                spacing="1"
+                            ),
+                            padding="8px 12px",
+                            bg="#f0fdf4",
+                            border_radius="6px"
+                        ),
+                        spacing="3",
+                        justify="center",
+                        margin_top="30px",
+                        padding="15px",
+                        bg="#f8fafc",
+                        border_radius="10px"
                     ),
                     
                     align_items="start",
