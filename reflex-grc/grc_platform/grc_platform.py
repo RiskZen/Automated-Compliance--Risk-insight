@@ -981,10 +981,1041 @@ def risks() -> rx.Component:
         )
     )
 
-# Create main app
-app = rx.App(
-    theme=rx.theme(
-        appearance="light",
-        accent_color="blue",
+
+# Control Testing Page
+@rx.page(route="/testing", title="Control Testing - GRC Platform", on_load=TestingState.load_all_data)
+def testing() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("Control Testing", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Schedule and record control tests with evidence", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            # Stats Cards
+            rx.grid(
+                rx.box(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("clipboard-check", size=24, color="#10b981"),
+                            bg="#f0fdf4",
+                            padding="10px",
+                            border_radius="50%"
+                        ),
+                        rx.vstack(
+                            rx.text("Total Tests", font_size="14px", color="#64748b"),
+                            rx.text(TestingState.total_tests, font_size="28px", font_weight="bold", color="#0f172a"),
+                            spacing="0",
+                            align_items="start"
+                        ),
+                        spacing="4"
+                    ),
+                    bg="white",
+                    padding="20px",
+                    border_radius="12px",
+                    border="1px solid #e2e8f0"
+                ),
+                rx.box(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("circle-check", size=24, color="#10b981"),
+                            bg="#f0fdf4",
+                            padding="10px",
+                            border_radius="50%"
+                        ),
+                        rx.vstack(
+                            rx.text("Passed", font_size="14px", color="#64748b"),
+                            rx.text(TestingState.passed_tests, font_size="28px", font_weight="bold", color="#10b981"),
+                            spacing="0",
+                            align_items="start"
+                        ),
+                        spacing="4"
+                    ),
+                    bg="white",
+                    padding="20px",
+                    border_radius="12px",
+                    border="1px solid #e2e8f0"
+                ),
+                rx.box(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("x-circle", size=24, color="#ef4444"),
+                            bg="#fef2f2",
+                            padding="10px",
+                            border_radius="50%"
+                        ),
+                        rx.vstack(
+                            rx.text("Failed", font_size="14px", color="#64748b"),
+                            rx.text((TestingState.total_tests - TestingState.passed_tests), font_size="28px", font_weight="bold", color="#ef4444"),
+                            spacing="0",
+                            align_items="start"
+                        ),
+                        spacing="4"
+                    ),
+                    bg="white",
+                    padding="20px",
+                    border_radius="12px",
+                    border="1px solid #e2e8f0"
+                ),
+                rx.box(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("percent", size=24, color="#3b82f6"),
+                            bg="#eff6ff",
+                            padding="10px",
+                            border_radius="50%"
+                        ),
+                        rx.vstack(
+                            rx.text("Effectiveness", font_size="14px", color="#64748b"),
+                            rx.text(TestingState.control_effectiveness.to_string() + "%", font_size="28px", font_weight="bold", color="#3b82f6"),
+                            spacing="0",
+                            align_items="start"
+                        ),
+                        spacing="4"
+                    ),
+                    bg="white",
+                    padding="20px",
+                    border_radius="12px",
+                    border="1px solid #e2e8f0"
+                ),
+                columns="4",
+                spacing="4",
+                width="100%",
+                margin_bottom="30px"
+            ),
+            
+            # Test Records Section
+            rx.box(
+                rx.hstack(
+                    rx.heading("Test Records", font_size="24px", font_weight="600"),
+                    rx.button(
+                        rx.icon("plus", size=20),
+                        " Record Test",
+                        on_click=TestingState.toggle_test_form,
+                        bg="#3b82f6",
+                        color="white",
+                        _hover={"bg": "#2563eb"},
+                        padding="12px 20px",
+                        border_radius="8px",
+                        font_weight="600"
+                    ),
+                    justify="between",
+                    width="100%",
+                    margin_bottom="20px"
+                ),
+                
+                # Create Form
+                rx.cond(
+                    TestingState.show_test_form,
+                    rx.box(
+                        rx.vstack(
+                            rx.select(
+                                TestingState.unified_controls.to(list).map(lambda c: c["ccf_id"] + " - " + c["name"]),
+                                placeholder="Select Control",
+                                on_change=TestingState.set_new_test_control_id,
+                                width="100%"
+                            ),
+                            rx.input(
+                                placeholder="Tester Name",
+                                value=TestingState.new_test_tester,
+                                on_change=TestingState.set_new_test_tester,
+                                width="100%"
+                            ),
+                            rx.input(
+                                placeholder="Test Date (YYYY-MM-DD)",
+                                value=TestingState.new_test_date,
+                                on_change=TestingState.set_new_test_date,
+                                width="100%"
+                            ),
+                            rx.select(
+                                ["Pass", "Fail", "Partial"],
+                                value=TestingState.new_test_result,
+                                on_change=TestingState.set_new_test_result,
+                                width="100%"
+                            ),
+                            rx.input(
+                                placeholder="Evidence File Name",
+                                value=TestingState.new_test_evidence,
+                                on_change=TestingState.set_new_test_evidence,
+                                width="100%"
+                            ),
+                            rx.text_area(
+                                placeholder="Test Notes",
+                                value=TestingState.new_test_notes,
+                                on_change=TestingState.set_new_test_notes,
+                                width="100%"
+                            ),
+                            rx.hstack(
+                                rx.button(
+                                    "Record Test",
+                                    on_click=TestingState.create_control_test,
+                                    bg="#3b82f6",
+                                    color="white",
+                                    _hover={"bg": "#2563eb"}
+                                ),
+                                rx.button(
+                                    "Cancel",
+                                    on_click=TestingState.toggle_test_form,
+                                    bg="#e2e8f0",
+                                    color="#0f172a"
+                                ),
+                                spacing="3"
+                            ),
+                            spacing="4",
+                            width="100%"
+                        ),
+                        bg="#f8fafc",
+                        padding="20px",
+                        border_radius="8px",
+                        margin_bottom="20px"
+                    ),
+                    rx.fragment()
+                ),
+                
+                # Test Records List
+                rx.foreach(
+                    TestingState.control_tests,
+                    lambda test: rx.box(
+                        rx.hstack(
+                            rx.vstack(
+                                rx.hstack(
+                                    rx.badge(test["control_ccf_id"], color_scheme="blue", font_family="monospace"),
+                                    rx.badge(
+                                        test["result"],
+                                        color_scheme=rx.cond(test["result"] == "Pass", "green", rx.cond(test["result"] == "Fail", "red", "yellow"))
+                                    ),
+                                    spacing="3"
+                                ),
+                                rx.text(test["notes"], font_size="14px", color="#64748b", margin_top="8px"),
+                                rx.hstack(
+                                    rx.text("Tested by: " + test["tester"].to_string(), font_size="13px", color="#64748b"),
+                                    rx.text("Date: " + test["test_date"].to_string(), font_size="13px", color="#64748b"),
+                                    rx.cond(
+                                        test["evidence"] != "",
+                                        rx.hstack(
+                                            rx.icon("paperclip", size=14, color="#64748b"),
+                                            rx.text(test["evidence"], font_size="13px", color="#64748b"),
+                                            spacing="1"
+                                        ),
+                                        rx.fragment()
+                                    ),
+                                    spacing="5",
+                                    margin_top="10px"
+                                ),
+                                align_items="start",
+                                flex="1"
+                            ),
+                            width="100%"
+                        ),
+                        bg="white",
+                        padding="20px",
+                        border_radius="12px",
+                        border=rx.cond(
+                            test["result"] == "Pass",
+                            "1px solid #86efac",
+                            rx.cond(test["result"] == "Fail", "1px solid #fca5a5", "1px solid #fcd34d")
+                        ),
+                        margin_bottom="15px"
+                    )
+                ),
+                
+                bg="white",
+                padding="30px",
+                border_radius="12px",
+                border="1px solid #e2e8f0"
+            ),
+            
+            spacing="6",
+            width="100%"
+        )
     )
-)
+
+
+# Issues Page
+@rx.page(route="/issues", title="Issues - GRC Platform", on_load=IssueState.load_all_data)
+def issues() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("Issue Management", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Track and manage issues identified during control testing", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            # Stats Cards
+            rx.grid(
+                rx.box(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("triangle-alert", size=24, color="#ef4444"),
+                            bg="#fef2f2",
+                            padding="10px",
+                            border_radius="50%"
+                        ),
+                        rx.vstack(
+                            rx.text("Open Issues", font_size="14px", color="#64748b"),
+                            rx.text(IssueState.open_issues, font_size="28px", font_weight="bold", color="#ef4444"),
+                            spacing="0",
+                            align_items="start"
+                        ),
+                        spacing="4"
+                    ),
+                    bg="white",
+                    padding="20px",
+                    border_radius="12px",
+                    border="1px solid #e2e8f0"
+                ),
+                rx.box(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("list-checks", size=24, color="#3b82f6"),
+                            bg="#eff6ff",
+                            padding="10px",
+                            border_radius="50%"
+                        ),
+                        rx.vstack(
+                            rx.text("Total Issues", font_size="14px", color="#64748b"),
+                            rx.text(IssueState.total_issues, font_size="28px", font_weight="bold", color="#3b82f6"),
+                            spacing="0",
+                            align_items="start"
+                        ),
+                        spacing="4"
+                    ),
+                    bg="white",
+                    padding="20px",
+                    border_radius="12px",
+                    border="1px solid #e2e8f0"
+                ),
+                columns="2",
+                spacing="4",
+                width="100%",
+                max_width="500px",
+                margin_bottom="30px"
+            ),
+            
+            # Issues Section
+            rx.box(
+                rx.hstack(
+                    rx.heading("All Issues", font_size="24px", font_weight="600"),
+                    rx.button(
+                        rx.icon("plus", size=20),
+                        " Report Issue",
+                        on_click=IssueState.toggle_issue_form,
+                        bg="#ef4444",
+                        color="white",
+                        _hover={"bg": "#dc2626"},
+                        padding="12px 20px",
+                        border_radius="8px",
+                        font_weight="600"
+                    ),
+                    justify="between",
+                    width="100%",
+                    margin_bottom="20px"
+                ),
+                
+                # Create Form
+                rx.cond(
+                    IssueState.show_issue_form,
+                    rx.box(
+                        rx.vstack(
+                            rx.input(
+                                placeholder="Issue Title",
+                                value=IssueState.new_issue_title,
+                                on_change=IssueState.set_new_issue_title,
+                                width="100%"
+                            ),
+                            rx.text_area(
+                                placeholder="Description",
+                                value=IssueState.new_issue_description,
+                                on_change=IssueState.set_new_issue_description,
+                                width="100%"
+                            ),
+                            rx.select(
+                                ["Low", "Medium", "High", "Critical"],
+                                value=IssueState.new_issue_severity,
+                                on_change=IssueState.set_new_issue_severity,
+                                width="100%"
+                            ),
+                            rx.input(
+                                placeholder="Assigned To",
+                                value=IssueState.new_issue_assigned_to,
+                                on_change=IssueState.set_new_issue_assigned_to,
+                                width="100%"
+                            ),
+                            rx.input(
+                                placeholder="Due Date (YYYY-MM-DD)",
+                                value=IssueState.new_issue_due_date,
+                                on_change=IssueState.set_new_issue_due_date,
+                                width="100%"
+                            ),
+                            rx.hstack(
+                                rx.button(
+                                    "Create Issue",
+                                    on_click=IssueState.create_issue,
+                                    bg="#ef4444",
+                                    color="white",
+                                    _hover={"bg": "#dc2626"}
+                                ),
+                                rx.button(
+                                    "Cancel",
+                                    on_click=IssueState.toggle_issue_form,
+                                    bg="#e2e8f0",
+                                    color="#0f172a"
+                                ),
+                                spacing="3"
+                            ),
+                            spacing="4",
+                            width="100%"
+                        ),
+                        bg="#fef2f2",
+                        padding="20px",
+                        border_radius="8px",
+                        margin_bottom="20px"
+                    ),
+                    rx.fragment()
+                ),
+                
+                # Issues List
+                rx.foreach(
+                    IssueState.issues,
+                    lambda issue: rx.box(
+                        rx.hstack(
+                            rx.vstack(
+                                rx.hstack(
+                                    rx.badge(
+                                        issue["severity"],
+                                        color_scheme=rx.cond(
+                                            issue["severity"] == "Critical", "red",
+                                            rx.cond(issue["severity"] == "High", "orange",
+                                            rx.cond(issue["severity"] == "Medium", "yellow", "gray"))
+                                        )
+                                    ),
+                                    rx.badge(
+                                        issue["status"],
+                                        color_scheme=rx.cond(
+                                            issue["status"] == "Open", "red",
+                                            rx.cond(issue["status"] == "In Progress", "yellow",
+                                            rx.cond(issue["status"] == "Resolved", "green", "gray"))
+                                        )
+                                    ),
+                                    spacing="3"
+                                ),
+                                rx.text(issue["title"], font_size="18px", font_weight="600", margin_top="8px"),
+                                rx.text(issue["description"], font_size="14px", color="#64748b", margin_top="5px"),
+                                rx.hstack(
+                                    rx.text("Assigned: " + issue["assigned_to"].to_string(), font_size="13px", color="#64748b"),
+                                    rx.text("Due: " + issue["due_date"].to_string(), font_size="13px", color="#64748b"),
+                                    spacing="5",
+                                    margin_top="10px"
+                                ),
+                                align_items="start",
+                                flex="1"
+                            ),
+                            rx.vstack(
+                                rx.cond(
+                                    issue["status"] == "Open",
+                                    rx.button(
+                                        "Start",
+                                        on_click=lambda: IssueState.update_issue_status(issue["id"], "In Progress"),
+                                        bg="#f59e0b",
+                                        color="white",
+                                        size="2"
+                                    ),
+                                    rx.fragment()
+                                ),
+                                rx.cond(
+                                    issue["status"] == "In Progress",
+                                    rx.button(
+                                        "Resolve",
+                                        on_click=lambda: IssueState.update_issue_status(issue["id"], "Resolved"),
+                                        bg="#10b981",
+                                        color="white",
+                                        size="2"
+                                    ),
+                                    rx.fragment()
+                                ),
+                                spacing="2"
+                            ),
+                            width="100%",
+                            align_items="start"
+                        ),
+                        bg="white",
+                        padding="20px",
+                        border_radius="12px",
+                        border=rx.cond(
+                            issue["status"] == "Open",
+                            "2px solid #ef4444",
+                            rx.cond(issue["status"] == "In Progress", "2px solid #f59e0b", "1px solid #e2e8f0")
+                        ),
+                        margin_bottom="15px"
+                    )
+                ),
+                
+                bg="white",
+                padding="30px",
+                border_radius="12px",
+                border="1px solid #e2e8f0"
+            ),
+            
+            spacing="6",
+            width="100%"
+        )
+    )
+
+
+# KRI Page
+@rx.page(route="/kris", title="KRIs - GRC Platform", on_load=KRIState.load_all_data)
+def kris() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("Key Risk Indicators (KRIs)", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Monitor metrics that indicate changes in risk levels", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            # KRI Section
+            rx.box(
+                rx.hstack(
+                    rx.heading("Risk Indicators", font_size="24px", font_weight="600"),
+                    rx.button(
+                        rx.icon("plus", size=20),
+                        " Add KRI",
+                        on_click=KRIState.toggle_kri_form,
+                        bg="#3b82f6",
+                        color="white",
+                        _hover={"bg": "#2563eb"},
+                        padding="12px 20px",
+                        border_radius="8px",
+                        font_weight="600"
+                    ),
+                    justify="between",
+                    width="100%",
+                    margin_bottom="20px"
+                ),
+                
+                # Create Form
+                rx.cond(
+                    KRIState.show_kri_form,
+                    rx.box(
+                        rx.vstack(
+                            rx.input(
+                                placeholder="KRI Name",
+                                value=KRIState.new_kri_name,
+                                on_change=KRIState.set_new_kri_name,
+                                width="100%"
+                            ),
+                            rx.text_area(
+                                placeholder="Description",
+                                value=KRIState.new_kri_description,
+                                on_change=KRIState.set_new_kri_description,
+                                width="100%"
+                            ),
+                            rx.select(
+                                KRIState.risks.to(list).map(lambda r: r["id"] + " - " + r["name"]),
+                                placeholder="Link to Risk",
+                                on_change=KRIState.set_new_kri_risk_id,
+                                width="100%"
+                            ),
+                            rx.hstack(
+                                rx.input(placeholder="Green Threshold", value=KRIState.new_kri_threshold_green.to_string(), on_change=KRIState.set_new_kri_threshold_green, width="30%"),
+                                rx.input(placeholder="Yellow Threshold", value=KRIState.new_kri_threshold_yellow.to_string(), on_change=KRIState.set_new_kri_threshold_yellow, width="30%"),
+                                rx.input(placeholder="Red Threshold", value=KRIState.new_kri_threshold_red.to_string(), on_change=KRIState.set_new_kri_threshold_red, width="30%"),
+                                spacing="3",
+                                width="100%"
+                            ),
+                            rx.hstack(
+                                rx.input(placeholder="Current Value", value=KRIState.new_kri_current_value.to_string(), on_change=KRIState.set_new_kri_current_value, width="50%"),
+                                rx.select(["Count", "Percentage", "Minutes", "Days", "Currency"], value=KRIState.new_kri_unit, on_change=KRIState.set_new_kri_unit, width="50%"),
+                                spacing="3",
+                                width="100%"
+                            ),
+                            rx.hstack(
+                                rx.select(["Weekly", "Monthly", "Quarterly", "Annually"], value=KRIState.new_kri_frequency, on_change=KRIState.set_new_kri_frequency, width="50%"),
+                                rx.input(placeholder="Owner", value=KRIState.new_kri_owner, on_change=KRIState.set_new_kri_owner, width="50%"),
+                                spacing="3",
+                                width="100%"
+                            ),
+                            rx.hstack(
+                                rx.button("Create KRI", on_click=KRIState.create_kri, bg="#3b82f6", color="white"),
+                                rx.button("Cancel", on_click=KRIState.toggle_kri_form, bg="#e2e8f0"),
+                                spacing="3"
+                            ),
+                            spacing="4",
+                            width="100%"
+                        ),
+                        bg="#f8fafc",
+                        padding="20px",
+                        border_radius="8px",
+                        margin_bottom="20px"
+                    ),
+                    rx.fragment()
+                ),
+                
+                # KRIs List
+                rx.foreach(
+                    KRIState.kris,
+                    lambda kri: rx.box(
+                        rx.hstack(
+                            rx.vstack(
+                                rx.text(kri["name"], font_size="18px", font_weight="600"),
+                                rx.text(kri["description"], font_size="14px", color="#64748b", margin_top="5px"),
+                                rx.hstack(
+                                    rx.text("Frequency: " + kri["frequency"].to_string(), font_size="13px", color="#64748b"),
+                                    rx.text("Owner: " + kri["owner"].to_string(), font_size="13px", color="#64748b"),
+                                    spacing="5",
+                                    margin_top="10px"
+                                ),
+                                align_items="start",
+                                flex="1"
+                            ),
+                            rx.vstack(
+                                rx.text("Current Value", font_size="12px", color="#64748b"),
+                                rx.hstack(
+                                    rx.text(kri["current_value"], font_size="32px", font_weight="bold", 
+                                           color=rx.cond(
+                                               kri["current_value"] <= kri["threshold_green"], "#10b981",
+                                               rx.cond(kri["current_value"] <= kri["threshold_yellow"], "#f59e0b", "#ef4444")
+                                           )),
+                                    rx.text(kri["unit"], font_size="14px", color="#64748b", margin_left="5px"),
+                                    align_items="baseline"
+                                ),
+                                rx.hstack(
+                                    rx.box(bg="#10b981", width="12px", height="12px", border_radius="2px"),
+                                    rx.text("<=" + kri["threshold_green"].to_string(), font_size="11px", color="#64748b"),
+                                    rx.box(bg="#f59e0b", width="12px", height="12px", border_radius="2px"),
+                                    rx.text("<=" + kri["threshold_yellow"].to_string(), font_size="11px", color="#64748b"),
+                                    rx.box(bg="#ef4444", width="12px", height="12px", border_radius="2px"),
+                                    rx.text(">" + kri["threshold_yellow"].to_string(), font_size="11px", color="#64748b"),
+                                    spacing="2",
+                                    margin_top="10px"
+                                ),
+                                align_items="end",
+                                spacing="2"
+                            ),
+                            width="100%",
+                            align_items="start"
+                        ),
+                        bg="white",
+                        padding="20px",
+                        border_radius="12px",
+                        border="1px solid #e2e8f0",
+                        margin_bottom="15px"
+                    )
+                ),
+                
+                bg="white",
+                padding="30px",
+                border_radius="12px",
+                border="1px solid #e2e8f0"
+            ),
+            
+            spacing="6",
+            width="100%"
+        )
+    )
+
+
+# KCI Page
+@rx.page(route="/kcis", title="KCIs - GRC Platform", on_load=KCIState.load_all_data)
+def kcis() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("Key Control Indicators (KCIs)", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Monitor control effectiveness and operational metrics", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            # KCI Section
+            rx.box(
+                rx.hstack(
+                    rx.heading("Control Indicators", font_size="24px", font_weight="600"),
+                    rx.button(
+                        rx.icon("plus", size=20),
+                        " Add KCI",
+                        on_click=KCIState.toggle_kci_form,
+                        bg="#8b5cf6",
+                        color="white",
+                        _hover={"bg": "#7c3aed"},
+                        padding="12px 20px",
+                        border_radius="8px",
+                        font_weight="600"
+                    ),
+                    justify="between",
+                    width="100%",
+                    margin_bottom="20px"
+                ),
+                
+                # Create Form
+                rx.cond(
+                    KCIState.show_kci_form,
+                    rx.box(
+                        rx.vstack(
+                            rx.input(
+                                placeholder="KCI Name",
+                                value=KCIState.new_kci_name,
+                                on_change=KCIState.set_new_kci_name,
+                                width="100%"
+                            ),
+                            rx.text_area(
+                                placeholder="Description",
+                                value=KCIState.new_kci_description,
+                                on_change=KCIState.set_new_kci_description,
+                                width="100%"
+                            ),
+                            rx.select(
+                                KCIState.kris.to(list).map(lambda k: k["id"] + " - " + k["name"]),
+                                placeholder="Link to KRI",
+                                on_change=KCIState.set_new_kci_kri_id,
+                                width="100%"
+                            ),
+                            rx.hstack(
+                                rx.input(placeholder="Green Threshold", value=KCIState.new_kci_threshold_green.to_string(), on_change=KCIState.set_new_kci_threshold_green, width="30%"),
+                                rx.input(placeholder="Yellow Threshold", value=KCIState.new_kci_threshold_yellow.to_string(), on_change=KCIState.set_new_kci_threshold_yellow, width="30%"),
+                                rx.input(placeholder="Red Threshold", value=KCIState.new_kci_threshold_red.to_string(), on_change=KCIState.set_new_kci_threshold_red, width="30%"),
+                                spacing="3",
+                                width="100%"
+                            ),
+                            rx.hstack(
+                                rx.input(placeholder="Current Value", value=KCIState.new_kci_current_value.to_string(), on_change=KCIState.set_new_kci_current_value, width="50%"),
+                                rx.select(["Percentage", "Count", "Minutes", "Days"], value=KCIState.new_kci_unit, on_change=KCIState.set_new_kci_unit, width="50%"),
+                                spacing="3",
+                                width="100%"
+                            ),
+                            rx.hstack(
+                                rx.select(["Weekly", "Monthly", "Quarterly", "Annually"], value=KCIState.new_kci_frequency, on_change=KCIState.set_new_kci_frequency, width="50%"),
+                                rx.input(placeholder="Owner", value=KCIState.new_kci_owner, on_change=KCIState.set_new_kci_owner, width="50%"),
+                                spacing="3",
+                                width="100%"
+                            ),
+                            rx.hstack(
+                                rx.button("Create KCI", on_click=KCIState.create_kci, bg="#8b5cf6", color="white"),
+                                rx.button("Cancel", on_click=KCIState.toggle_kci_form, bg="#e2e8f0"),
+                                spacing="3"
+                            ),
+                            spacing="4",
+                            width="100%"
+                        ),
+                        bg="#faf5ff",
+                        padding="20px",
+                        border_radius="8px",
+                        margin_bottom="20px"
+                    ),
+                    rx.fragment()
+                ),
+                
+                # KCIs List
+                rx.foreach(
+                    KCIState.kcis,
+                    lambda kci: rx.box(
+                        rx.hstack(
+                            rx.vstack(
+                                rx.text(kci["name"], font_size="18px", font_weight="600"),
+                                rx.text(kci["description"], font_size="14px", color="#64748b", margin_top="5px"),
+                                rx.hstack(
+                                    rx.text("Frequency: " + kci["frequency"].to_string(), font_size="13px", color="#64748b"),
+                                    rx.text("Owner: " + kci["owner"].to_string(), font_size="13px", color="#64748b"),
+                                    spacing="5",
+                                    margin_top="10px"
+                                ),
+                                align_items="start",
+                                flex="1"
+                            ),
+                            rx.vstack(
+                                rx.text("Current Value", font_size="12px", color="#64748b"),
+                                rx.hstack(
+                                    rx.text(kci["current_value"], font_size="32px", font_weight="bold", 
+                                           color=rx.cond(
+                                               kci["current_value"] >= kci["threshold_green"], "#10b981",
+                                               rx.cond(kci["current_value"] >= kci["threshold_yellow"], "#f59e0b", "#ef4444")
+                                           )),
+                                    rx.text(kci["unit"], font_size="14px", color="#64748b", margin_left="5px"),
+                                    align_items="baseline"
+                                ),
+                                rx.hstack(
+                                    rx.box(bg="#10b981", width="12px", height="12px", border_radius="2px"),
+                                    rx.text(">=" + kci["threshold_green"].to_string(), font_size="11px", color="#64748b"),
+                                    rx.box(bg="#f59e0b", width="12px", height="12px", border_radius="2px"),
+                                    rx.text(">=" + kci["threshold_yellow"].to_string(), font_size="11px", color="#64748b"),
+                                    rx.box(bg="#ef4444", width="12px", height="12px", border_radius="2px"),
+                                    rx.text("<" + kci["threshold_yellow"].to_string(), font_size="11px", color="#64748b"),
+                                    spacing="2",
+                                    margin_top="10px"
+                                ),
+                                align_items="end",
+                                spacing="2"
+                            ),
+                            width="100%",
+                            align_items="start"
+                        ),
+                        bg="white",
+                        padding="20px",
+                        border_radius="12px",
+                        border="1px solid #e2e8f0",
+                        margin_bottom="15px"
+                    )
+                ),
+                
+                bg="white",
+                padding="30px",
+                border_radius="12px",
+                border="1px solid #e2e8f0"
+            ),
+            
+            spacing="6",
+            width="100%"
+        )
+    )
+
+
+# Risk Heatmap Page - Both Matrix and Network Graph
+@rx.page(route="/heatmap", title="Risk Heatmap - GRC Platform", on_load=HeatmapState.load_all_data)
+def heatmap() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("Risk Heatmap & Visualization", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Visual representation of risk landscape and relationships", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            # Risk Matrix Heatmap
+            rx.box(
+                rx.vstack(
+                    rx.hstack(
+                        rx.icon("grid-3x3", size=24, color="#ef4444"),
+                        rx.text("Risk Matrix (Impact vs Likelihood)", font_size="20px", font_weight="600"),
+                        spacing="3"
+                    ),
+                    rx.text("Position indicates risk severity - top-right is highest risk", font_size="14px", color="#64748b", margin_bottom="20px"),
+                    
+                    # Matrix Grid
+                    rx.box(
+                        # Y-axis label
+                        rx.box(
+                            rx.text("IMPACT", font_size="12px", font_weight="600", color="#64748b", 
+                                   style={"writing_mode": "vertical-rl", "transform": "rotate(180deg)"}),
+                            position="absolute",
+                            left="-30px",
+                            top="50%",
+                            transform="translateY(-50%)"
+                        ),
+                        # Grid
+                        rx.grid(
+                            # Row 5 (High Impact)
+                            rx.box(bg="#fef3c7", border="1px solid #fcd34d", height="60px", border_radius="4px", display="flex", align_items="center", justify_content="center",
+                                  _hover={"bg": "#fde68a"}),
+                            rx.box(bg="#fed7aa", border="1px solid #fdba74", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fdba74"}),
+                            rx.box(bg="#fecaca", border="1px solid #fca5a5", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fca5a5"}),
+                            rx.box(bg="#fecaca", border="1px solid #f87171", height="60px", border_radius="4px",
+                                  _hover={"bg": "#f87171"}),
+                            rx.box(bg="#fee2e2", border="1px solid #ef4444", height="60px", border_radius="4px", 
+                                  _hover={"bg": "#ef4444"}),
+                            # Row 4
+                            rx.box(bg="#dcfce7", border="1px solid #86efac", height="60px", border_radius="4px",
+                                  _hover={"bg": "#86efac"}),
+                            rx.box(bg="#fef3c7", border="1px solid #fcd34d", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fde68a"}),
+                            rx.box(bg="#fed7aa", border="1px solid #fdba74", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fdba74"}),
+                            rx.box(bg="#fecaca", border="1px solid #fca5a5", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fca5a5"}),
+                            rx.box(bg="#fecaca", border="1px solid #f87171", height="60px", border_radius="4px",
+                                  _hover={"bg": "#f87171"}),
+                            # Row 3 (Medium Impact)
+                            rx.box(bg="#dcfce7", border="1px solid #86efac", height="60px", border_radius="4px",
+                                  _hover={"bg": "#86efac"}),
+                            rx.box(bg="#dcfce7", border="1px solid #4ade80", height="60px", border_radius="4px",
+                                  _hover={"bg": "#4ade80"}),
+                            rx.box(bg="#fef3c7", border="1px solid #fcd34d", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fde68a"}),
+                            rx.box(bg="#fed7aa", border="1px solid #fdba74", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fdba74"}),
+                            rx.box(bg="#fecaca", border="1px solid #fca5a5", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fca5a5"}),
+                            # Row 2
+                            rx.box(bg="#d1fae5", border="1px solid #6ee7b7", height="60px", border_radius="4px",
+                                  _hover={"bg": "#6ee7b7"}),
+                            rx.box(bg="#dcfce7", border="1px solid #86efac", height="60px", border_radius="4px",
+                                  _hover={"bg": "#86efac"}),
+                            rx.box(bg="#dcfce7", border="1px solid #4ade80", height="60px", border_radius="4px",
+                                  _hover={"bg": "#4ade80"}),
+                            rx.box(bg="#fef3c7", border="1px solid #fcd34d", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fde68a"}),
+                            rx.box(bg="#fed7aa", border="1px solid #fdba74", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fdba74"}),
+                            # Row 1 (Low Impact)
+                            rx.box(bg="#d1fae5", border="1px solid #6ee7b7", height="60px", border_radius="4px",
+                                  _hover={"bg": "#6ee7b7"}),
+                            rx.box(bg="#d1fae5", border="1px solid #6ee7b7", height="60px", border_radius="4px",
+                                  _hover={"bg": "#6ee7b7"}),
+                            rx.box(bg="#dcfce7", border="1px solid #86efac", height="60px", border_radius="4px",
+                                  _hover={"bg": "#86efac"}),
+                            rx.box(bg="#dcfce7", border="1px solid #4ade80", height="60px", border_radius="4px",
+                                  _hover={"bg": "#4ade80"}),
+                            rx.box(bg="#fef3c7", border="1px solid #fcd34d", height="60px", border_radius="4px",
+                                  _hover={"bg": "#fde68a"}),
+                            columns="5",
+                            spacing="2",
+                            width="400px"
+                        ),
+                        # X-axis label
+                        rx.text("LIKELIHOOD", font_size="12px", font_weight="600", color="#64748b", text_align="center", margin_top="10px"),
+                        position="relative",
+                        padding_left="40px"
+                    ),
+                    
+                    # Legend
+                    rx.hstack(
+                        rx.hstack(rx.box(bg="#d1fae5", width="20px", height="20px", border_radius="4px"), rx.text("Low", font_size="13px"), spacing="2"),
+                        rx.hstack(rx.box(bg="#fef3c7", width="20px", height="20px", border_radius="4px"), rx.text("Medium", font_size="13px"), spacing="2"),
+                        rx.hstack(rx.box(bg="#fed7aa", width="20px", height="20px", border_radius="4px"), rx.text("High", font_size="13px"), spacing="2"),
+                        rx.hstack(rx.box(bg="#fecaca", width="20px", height="20px", border_radius="4px"), rx.text("Critical", font_size="13px"), spacing="2"),
+                        spacing="6",
+                        margin_top="20px"
+                    ),
+                    
+                    align_items="start",
+                    spacing="4"
+                ),
+                bg="white",
+                padding="30px",
+                border_radius="12px",
+                border="1px solid #e2e8f0",
+                margin_bottom="30px"
+            ),
+            
+            # Risk Network Graph
+            rx.box(
+                rx.vstack(
+                    rx.hstack(
+                        rx.icon("git-branch", size=24, color="#8b5cf6"),
+                        rx.text("Risk Relationship Network", font_size="20px", font_weight="600"),
+                        spacing="3"
+                    ),
+                    rx.text("Visual flow: Risks → KRIs → KCIs → Controls", font_size="14px", color="#64748b", margin_bottom="20px"),
+                    
+                    # Network Visualization
+                    rx.foreach(
+                        HeatmapState.risks,
+                        lambda risk: rx.box(
+                            rx.vstack(
+                                # Risk Node
+                                rx.box(
+                                    rx.hstack(
+                                        rx.icon("alert-triangle", size=20, color="white"),
+                                        rx.text(risk["name"], font_size="14px", font_weight="600", color="white"),
+                                        spacing="2"
+                                    ),
+                                    bg=rx.cond(
+                                        risk["residual_risk_score"] >= 7, "#ef4444",
+                                        rx.cond(risk["residual_risk_score"] >= 4, "#f59e0b", "#10b981")
+                                    ),
+                                    padding="12px 20px",
+                                    border_radius="8px",
+                                    box_shadow="md"
+                                ),
+                                
+                                # Connector Line
+                                rx.box(
+                                    width="2px",
+                                    height="30px",
+                                    bg="#e2e8f0"
+                                ),
+                                
+                                # KRIs linked to this risk
+                                rx.hstack(
+                                    rx.foreach(
+                                        HeatmapState.kris.to(list).filter(lambda k: k["risk_id"] == risk["id"]),
+                                        lambda kri: rx.vstack(
+                                            rx.box(
+                                                rx.text(kri["name"], font_size="12px", font_weight="500", color="#1e40af"),
+                                                bg="#eff6ff",
+                                                padding="8px 14px",
+                                                border_radius="6px",
+                                                border="1px solid #bfdbfe"
+                                            ),
+                                            rx.box(width="2px", height="20px", bg="#e2e8f0"),
+                                            # KCIs linked to this KRI
+                                            rx.hstack(
+                                                rx.foreach(
+                                                    HeatmapState.kcis.to(list).filter(lambda c: c["kri_id"] == kri["id"]),
+                                                    lambda kci: rx.box(
+                                                        rx.text(kci["name"], font_size="11px", color="#6b21a8"),
+                                                        bg="#faf5ff",
+                                                        padding="6px 10px",
+                                                        border_radius="4px",
+                                                        border="1px solid #e9d5ff"
+                                                    )
+                                                ),
+                                                spacing="2",
+                                                flex_wrap="wrap"
+                                            ),
+                                            align_items="center",
+                                            spacing="2"
+                                        )
+                                    ),
+                                    spacing="4",
+                                    flex_wrap="wrap",
+                                    justify="center"
+                                ),
+                                
+                                align_items="center",
+                                spacing="2",
+                                padding="20px",
+                                width="100%"
+                            ),
+                            bg="#fafafa",
+                            border_radius="12px",
+                            border="1px solid #e2e8f0",
+                            margin_bottom="20px"
+                        )
+                    ),
+                    
+                    align_items="start",
+                    spacing="4",
+                    width="100%"
+                ),
+                bg="white",
+                padding="30px",
+                border_radius="12px",
+                border="1px solid #e2e8f0"
+            ),
+            
+            # Summary Stats
+            rx.grid(
+                rx.box(
+                    rx.vstack(
+                        rx.text("Total Risks", font_size="14px", color="#64748b"),
+                        rx.text(HeatmapState.total_risks, font_size="36px", font_weight="bold", color="#ef4444"),
+                        spacing="2"
+                    ),
+                    bg="white",
+                    padding="20px",
+                    border_radius="12px",
+                    border="1px solid #e2e8f0",
+                    text_align="center"
+                ),
+                rx.box(
+                    rx.vstack(
+                        rx.text("Avg Risk Score", font_size="14px", color="#64748b"),
+                        rx.text(HeatmapState.avg_residual_risk, font_size="36px", font_weight="bold", color="#f59e0b"),
+                        spacing="2"
+                    ),
+                    bg="white",
+                    padding="20px",
+                    border_radius="12px",
+                    border="1px solid #e2e8f0",
+                    text_align="center"
+                ),
+                rx.box(
+                    rx.vstack(
+                        rx.text("Control Effectiveness", font_size="14px", color="#64748b"),
+                        rx.text(HeatmapState.control_effectiveness.to_string() + "%", font_size="36px", font_weight="bold", color="#10b981"),
+                        spacing="2"
+                    ),
+                    bg="white",
+                    padding="20px",
+                    border_radius="12px",
+                    border="1px solid #e2e8f0",
+                    text_align="center"
+                ),
+                columns="3",
+                spacing="4",
+                width="100%",
+                margin_top="30px"
+            ),
+            
+            spacing="6",
+            width="100%"
+        )
+    )
