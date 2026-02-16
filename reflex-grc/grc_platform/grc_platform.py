@@ -1107,9 +1107,9 @@ def testing() -> rx.Component:
                     TestingState.show_test_form,
                     rx.box(
                         rx.vstack(
-                            rx.select(
-                                TestingState.unified_controls.to(list).map(lambda c: c["ccf_id"] + " - " + c["name"]),
-                                placeholder="Select Control",
+                            rx.input(
+                                placeholder="Control ID (e.g., ctrl-001)",
+                                value=TestingState.new_test_control_id,
                                 on_change=TestingState.set_new_test_control_id,
                                 width="100%"
                             ),
