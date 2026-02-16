@@ -1894,10 +1894,7 @@ def heatmap() -> rx.Component:
                                         spacing="1",
                                         align_items="start"
                                     ),
-                                    bg=rx.cond(
-                                        risk["residual_risk_score"] >= 7, "#ef4444",
-                                        rx.cond(risk["residual_risk_score"] >= 4, "#f59e0b", "#10b981")
-                                    ),
+                                    bg="#ef4444",
                                     padding="12px 16px",
                                     border_radius="8px",
                                     width="100%",
