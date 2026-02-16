@@ -2019,3 +2019,12 @@ def heatmap() -> rx.Component:
             width="100%"
         )
     )
+
+
+# Create main app
+app = rx.App(
+    theme=rx.theme(
+        appearance="light",
+        accent_color="blue",
+    )
+)
