@@ -1710,21 +1710,17 @@ def kcis() -> rx.Component:
                             rx.vstack(
                                 rx.text("Current Value", font_size="12px", color="#64748b"),
                                 rx.hstack(
-                                    rx.text(kci["current_value"], font_size="32px", font_weight="bold", 
-                                           color=rx.cond(
-                                               kci["current_value"] >= kci["threshold_green"], "#10b981",
-                                               rx.cond(kci["current_value"] >= kci["threshold_yellow"], "#f59e0b", "#ef4444")
-                                           )),
+                                    rx.text(kci["current_value"], font_size="32px", font_weight="bold", color="#8b5cf6"),
                                     rx.text(kci["unit"], font_size="14px", color="#64748b", margin_left="5px"),
                                     align_items="baseline"
                                 ),
                                 rx.hstack(
                                     rx.box(bg="#10b981", width="12px", height="12px", border_radius="2px"),
-                                    rx.text(">=" + kci["threshold_green"].to_string(), font_size="11px", color="#64748b"),
+                                    rx.text("Green", font_size="11px", color="#64748b"),
                                     rx.box(bg="#f59e0b", width="12px", height="12px", border_radius="2px"),
-                                    rx.text(">=" + kci["threshold_yellow"].to_string(), font_size="11px", color="#64748b"),
+                                    rx.text("Yellow", font_size="11px", color="#64748b"),
                                     rx.box(bg="#ef4444", width="12px", height="12px", border_radius="2px"),
-                                    rx.text("<" + kci["threshold_yellow"].to_string(), font_size="11px", color="#64748b"),
+                                    rx.text("Red", font_size="11px", color="#64748b"),
                                     spacing="2",
                                     margin_top="10px"
                                 ),
