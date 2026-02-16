@@ -1653,9 +1653,9 @@ def kcis() -> rx.Component:
                                 on_change=KCIState.set_new_kci_description,
                                 width="100%"
                             ),
-                            rx.select(
-                                KCIState.kris.to(list).map(lambda k: k["id"] + " - " + k["name"]),
-                                placeholder="Link to KRI",
+                            rx.input(
+                                placeholder="KRI ID (e.g., kri-001)",
+                                value=KCIState.new_kci_kri_id,
                                 on_change=KCIState.set_new_kci_kri_id,
                                 width="100%"
                             ),
