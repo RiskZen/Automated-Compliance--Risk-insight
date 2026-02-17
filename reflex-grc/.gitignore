@@ -1,6 +1,43 @@
+# Reflex generated files
 .states
-*.py[cod]
 .web
 __pycache__/
 assets/external/
+
+# Python
+*.py[cod]
+*.pyo
+*.pyd
+__pycache__/
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Database
 *.db
+*.sqlite3
+
+# Environment variables - KEEP PRIVATE!
+.env
+.env.local
+.env.production
+.env.*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Node (if any)
+node_modules/
