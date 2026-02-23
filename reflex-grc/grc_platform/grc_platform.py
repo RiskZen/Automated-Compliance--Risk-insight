@@ -242,23 +242,97 @@ def sidebar() -> rx.Component:
                     style={"text_decoration": "none", "color": "#cbd5e1"}
                 ),
                 
+                rx.text("AI GOVERNANCE", font_size="11px", color="#64748b", font_weight="600", padding_left="15px", margin_top="20px"),
+                rx.link(
+                    rx.hstack(
+                        rx.icon("brain", size=20),
+                        rx.text("AI Models", font_size="14px", font_weight="500"),
+                        padding="12px 15px",
+                        border_radius="8px",
+                        _hover={"bg": "#1e293b"},
+                        width="100%"
+                    ),
+                    href="/ai-models",
+                    style={"text_decoration": "none", "color": "#cbd5e1"}
+                ),
+                rx.link(
+                    rx.hstack(
+                        rx.icon("clipboard-list", size=20),
+                        rx.text("AI Assessments", font_size="14px", font_weight="500"),
+                        padding="12px 15px",
+                        border_radius="8px",
+                        _hover={"bg": "#1e293b"},
+                        width="100%"
+                    ),
+                    href="/ai-assessments",
+                    style={"text_decoration": "none", "color": "#cbd5e1"}
+                ),
+                
+                rx.text("SYSTEM", font_size="11px", color="#64748b", font_weight="600", padding_left="15px", margin_top="20px"),
+                rx.link(
+                    rx.hstack(
+                        rx.icon("plug", size=20),
+                        rx.text("Connectors", font_size="14px", font_weight="500"),
+                        padding="12px 15px",
+                        border_radius="8px",
+                        _hover={"bg": "#1e293b"},
+                        width="100%"
+                    ),
+                    href="/connectors",
+                    style={"text_decoration": "none", "color": "#cbd5e1"}
+                ),
+                rx.link(
+                    rx.hstack(
+                        rx.icon("scroll-text", size=20),
+                        rx.text("Audit Logs", font_size="14px", font_weight="500"),
+                        padding="12px 15px",
+                        border_radius="8px",
+                        _hover={"bg": "#1e293b"},
+                        width="100%"
+                    ),
+                    href="/audit-logs",
+                    style={"text_decoration": "none", "color": "#cbd5e1"}
+                ),
+                
                 spacing="2",
                 width="100%",
                 padding="10px"
             ),
             
-            # Footer
+            # User info and logout
             rx.box(
-                rx.box(
-                    rx.text("Production Ready", font_size="11px", color="#94a3b8", margin_bottom="5px"),
-                    rx.text("Complete GRC Platform", font_size="13px", color="#e2e8f0", font_weight="600"),
-                    padding="15px",
-                    bg="#1e293b",
-                    border_radius="8px",
-                    border="1px solid #334155"
+                rx.vstack(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("user", size=18, color="white"),
+                            bg="#3b82f6",
+                            padding="8px",
+                            border_radius="50%"
+                        ),
+                        rx.vstack(
+                            rx.text(GRCState.current_user["name"], font_size="13px", color="white", font_weight="500"),
+                            rx.text(GRCState.current_user["role"], font_size="11px", color="#94a3b8"),
+                            spacing="0",
+                            align_items="start"
+                        ),
+                        spacing="2",
+                        width="100%"
+                    ),
+                    rx.button(
+                        rx.icon("log-out", size=16),
+                        " Logout",
+                        on_click=AuthState.logout,
+                        bg="#1e293b",
+                        color="#cbd5e1",
+                        width="100%",
+                        margin_top="10px",
+                        _hover={"bg": "#334155"}
+                    ),
+                    width="100%"
                 ),
                 padding="15px",
-                margin_top="auto"
+                margin_top="auto",
+                border_top="1px solid #1e293b"
             ),
             
             height="100vh",
