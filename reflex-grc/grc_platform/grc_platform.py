@@ -55,7 +55,6 @@ def login() -> rx.Component:
                     type="password",
                     value=AuthState.login_password,
                     on_change=AuthState.set_login_password,
-                    on_key_down=lambda e: AuthState.login() if e.key == "Enter" else None,
                     width="100%",
                     height="48px",
                     border_radius="8px",
