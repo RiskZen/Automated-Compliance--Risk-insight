@@ -749,62 +749,75 @@ def policies() -> rx.Component:
     return layout(
         rx.vstack(
             rx.heading("Policy Management", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
-            rx.text("Manage internal policies and map to controls", font_size="18px", color="#64748b", margin_bottom="30px"),
+            rx.text("Manage internal policies and their control mappings", font_size="18px", color="#64748b", margin_bottom="30px"),
             
             rx.box(
-                rx.hstack(
-                    rx.heading("Internal Policies", font_size="24px", font_weight="600"),
-                    rx.button(
-                        rx.icon("plus", size=20),
-                        " Create Policy",
-                        on_click=PolicyState.toggle_policy_form,
-                        bg="#3b82f6",
-                        color="white",
-                        _hover={"bg": "#2563eb"}
-                    ),
-                    justify="between",
-                    width="100%",
-                    margin_bottom="20px"
-                ),
+                rx.heading("Internal Policies", font_size="24px", font_weight="600", margin_bottom="20px"),
                 
-                # Create Form
-                rx.cond(
-                    PolicyState.show_policy_form,
-                    rx.box(
-                        rx.vstack(
-                            rx.input(placeholder="Policy ID (e.g., POL-SEC-100)", value=PolicyState.new_policy_id, on_change=PolicyState.set_new_policy_id, width="100%"),
-                            rx.input(placeholder="Policy Name", value=PolicyState.new_policy_name, on_change=PolicyState.set_new_policy_name, width="100%"),
-                            rx.text_area(placeholder="Description", value=PolicyState.new_policy_description, on_change=PolicyState.set_new_policy_description, width="100%"),
-                            rx.input(placeholder="Owner", value=PolicyState.new_policy_owner, on_change=PolicyState.set_new_policy_owner, width="100%"),
-                            rx.hstack(
-                                rx.button("Create Policy", on_click=PolicyState.create_policy, bg="#3b82f6", color="white"),
-                                rx.button("Cancel", on_click=PolicyState.toggle_policy_form, bg="#e2e8f0"),
-                                spacing="3"
-                            ),
-                            spacing="4"
-                        ),
-                        bg="#f8fafc",
-                        padding="20px",
-                        border_radius="8px",
-                        margin_bottom="20px"
-                    ),
-                    rx.fragment()
-                ),
-                
-                # Policies List
+                # Policies List with expandable mappings
                 rx.foreach(
                     PolicyState.policies,
                     lambda pol: rx.box(
                         rx.vstack(
                             rx.hstack(
-                                rx.badge(pol["policy_id"], color_scheme="purple", font_family="monospace"),
-                                rx.text(pol["name"], font_size="18px", font_weight="600"),
-                                rx.badge(pol["status"], color_scheme="green"),
-                                spacing="3"
+                                rx.vstack(
+                                    rx.hstack(
+                                        rx.badge(pol["policy_id"], color_scheme="purple", font_family="monospace"),
+                                        rx.text(pol["name"], font_size="18px", font_weight="600"),
+                                        rx.badge(pol["status"], color_scheme="green"),
+                                        rx.badge(pol["category"], color_scheme="blue"),
+                                        spacing="3"
+                                    ),
+                                    rx.text(pol["description"], font_size="14px", color="#64748b", margin_top="8px"),
+                                    rx.text("Owner: " + pol["owner"].to_string(), font_size="13px", color="#64748b", margin_top="5px"),
+                                    align_items="start",
+                                    flex="1"
+                                ),
+                                rx.button(
+                                    rx.cond(
+                                        PolicyState.expanded_policies.contains(pol["id"]),
+                                        rx.hstack(rx.icon("chevron-up", size=18), rx.text("Hide"), spacing="2"),
+                                        rx.hstack(rx.icon("chevron-down", size=18), rx.text("Mappings"), spacing="2")
+                                    ),
+                                    on_click=lambda: PolicyState.toggle_policy_details(pol["id"]),
+                                    bg="#f8fafc",
+                                    color="#64748b",
+                                    border="1px solid #e2e8f0"
+                                ),
+                                width="100%",
+                                align_items="start"
                             ),
-                            rx.text(pol["description"], font_size="14px", color="#64748b", margin_top="8px"),
-                            rx.text("Category: " + pol["category"].to_string() + " | Owner: " + pol["owner"].to_string(), font_size="13px", color="#64748b", margin_top="8px"),
-                            align_items="start"
+                            # Expandable Mapping Section
+                            rx.cond(
+                                PolicyState.expanded_policies.contains(pol["id"]),
+                                rx.box(
+                                    rx.grid(
+                                        rx.box(
+                                            rx.hstack(rx.icon("shield-check", size=18, color="#3b82f6"), rx.text("Mapped Controls", font_size="14px", font_weight="600", color="#3b82f6"), spacing="2"),
+                                            rx.foreach(
+                                                pol["mapped_controls"],
+                                                lambda c: rx.box(
+                                                    rx.hstack(rx.badge(c["ccf_id"], color_scheme="blue", size="1"), rx.text(c["control_name"], font_size="12px"), spacing="2"),
+                                                    bg="white", padding="8px", border_radius="4px", border="1px solid #e2e8f0", margin_top="6px"
+                                                )
+                                            ),
+                                            bg="#eff6ff", padding="15px", border_radius="8px"
+                                        ),
+                                        rx.box(
+                                            rx.hstack(rx.icon("layers", size=18, color="#10b981"), rx.text("Linked Frameworks", font_size="14px", font_weight="600", color="#10b981"), spacing="2"),
+                                            rx.foreach(
+                                                pol["mapped_frameworks"],
+                                                lambda f: rx.badge(f, color_scheme="green", margin_top="6px", margin_right="6px")
+                                            ),
+                                            bg="#f0fdf4", padding="15px", border_radius="8px"
+                                        ),
+                                        columns="2", spacing="4", width="100%"
+                                    ),
+                                    margin_top="15px", padding="15px", bg="#f8fafc", border_radius="8px"
+                                ),
+                                rx.fragment()
+                            ),
+                            spacing="0", width="100%"
                         ),
                         bg="white",
                         padding="20px",
