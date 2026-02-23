@@ -2253,6 +2253,339 @@ def heatmap() -> rx.Component:
     )
 
 
+# AI Models Page
+@rx.page(route="/ai-models", title="AI Models - GRC Platform", on_load=AIGovernanceState.load_all_data)
+def ai_models() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("AI Model Registry", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Track and govern all AI/ML models in your organization", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            # Stats
+            rx.grid(
+                rx.box(
+                    rx.hstack(
+                        rx.box(rx.icon("brain", size=24, color="#8b5cf6"), bg="#faf5ff", padding="10px", border_radius="50%"),
+                        rx.vstack(
+                            rx.text("Total Models", font_size="14px", color="#64748b"),
+                            rx.text(AIGovernanceState.total_ai_models, font_size="28px", font_weight="bold", color="#0f172a"),
+                            spacing="0", align_items="start"
+                        ),
+                        spacing="4"
+                    ),
+                    bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0"
+                ),
+                rx.box(
+                    rx.hstack(
+                        rx.box(rx.icon("rocket", size=24, color="#10b981"), bg="#f0fdf4", padding="10px", border_radius="50%"),
+                        rx.vstack(
+                            rx.text("In Production", font_size="14px", color="#64748b"),
+                            rx.text(AIGovernanceState.production_ai_models, font_size="28px", font_weight="bold", color="#10b981"),
+                            spacing="0", align_items="start"
+                        ),
+                        spacing="4"
+                    ),
+                    bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0"
+                ),
+                rx.box(
+                    rx.hstack(
+                        rx.box(rx.icon("alert-triangle", size=24, color="#ef4444"), bg="#fef2f2", padding="10px", border_radius="50%"),
+                        rx.vstack(
+                            rx.text("High Risk", font_size="14px", color="#64748b"),
+                            rx.text(AIGovernanceState.high_risk_ai_models, font_size="28px", font_weight="bold", color="#ef4444"),
+                            spacing="0", align_items="start"
+                        ),
+                        spacing="4"
+                    ),
+                    bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0"
+                ),
+                columns="3", spacing="4", width="100%", margin_bottom="30px"
+            ),
+            
+            # Models Section
+            rx.box(
+                rx.hstack(
+                    rx.heading("Registered Models", font_size="24px", font_weight="600"),
+                    rx.button(
+                        rx.icon("plus", size=20), " Register Model",
+                        on_click=AIGovernanceState.toggle_model_form,
+                        bg="#8b5cf6", color="white", _hover={"bg": "#7c3aed"},
+                        padding="12px 20px", border_radius="8px", font_weight="600"
+                    ),
+                    justify="between", width="100%", margin_bottom="20px"
+                ),
+                
+                # Create Form
+                rx.cond(
+                    AIGovernanceState.show_model_form,
+                    rx.box(
+                        rx.vstack(
+                            rx.grid(
+                                rx.input(placeholder="Model Name *", value=AIGovernanceState.new_model_name, on_change=AIGovernanceState.set_new_model_name),
+                                rx.select(["Classification", "Regression", "NLP Classification", "Anomaly Detection", "Time Series", "Recommendation", "Computer Vision", "Generative"], value=AIGovernanceState.new_model_type, on_change=AIGovernanceState.set_new_model_type),
+                                rx.input(placeholder="Version", value=AIGovernanceState.new_model_version, on_change=AIGovernanceState.set_new_model_version),
+                                rx.select(["Development", "Testing", "Staging", "Production", "Deprecated"], value=AIGovernanceState.new_model_status, on_change=AIGovernanceState.set_new_model_status),
+                                rx.select(["Low", "Medium", "High", "Critical"], value=AIGovernanceState.new_model_risk_level, on_change=AIGovernanceState.set_new_model_risk_level),
+                                rx.input(placeholder="Owner *", value=AIGovernanceState.new_model_owner, on_change=AIGovernanceState.set_new_model_owner),
+                                columns="3", spacing="3", width="100%"
+                            ),
+                            rx.input(placeholder="Department", value=AIGovernanceState.new_model_department, on_change=AIGovernanceState.set_new_model_department, width="100%"),
+                            rx.text_area(placeholder="Purpose / Description", value=AIGovernanceState.new_model_purpose, on_change=AIGovernanceState.set_new_model_purpose, width="100%"),
+                            rx.hstack(
+                                rx.button("Register Model", on_click=AIGovernanceState.create_ai_model, bg="#8b5cf6", color="white"),
+                                rx.button("Cancel", on_click=AIGovernanceState.toggle_model_form, bg="#e2e8f0"),
+                                spacing="3"
+                            ),
+                            spacing="4", width="100%"
+                        ),
+                        bg="#faf5ff", padding="20px", border_radius="8px", margin_bottom="20px"
+                    ),
+                    rx.fragment()
+                ),
+                
+                # Models List
+                rx.foreach(
+                    AIGovernanceState.ai_models,
+                    lambda model: rx.box(
+                        rx.hstack(
+                            rx.vstack(
+                                rx.hstack(
+                                    rx.text(model["name"], font_size="18px", font_weight="600"),
+                                    rx.badge(model["version"], color_scheme="gray"),
+                                    rx.badge(model["status"], color_scheme=rx.cond(model["status"] == "Production", "green", rx.cond(model["status"] == "Testing", "yellow", "gray"))),
+                                    rx.badge(model["risk_level"], color_scheme=rx.cond(model["risk_level"] == "Critical", "red", rx.cond(model["risk_level"] == "High", "orange", rx.cond(model["risk_level"] == "Medium", "yellow", "green")))),
+                                    spacing="2"
+                                ),
+                                rx.text(model["purpose"], font_size="14px", color="#64748b", margin_top="5px"),
+                                rx.hstack(
+                                    rx.text("Type: " + model["type"].to_string(), font_size="13px", color="#64748b"),
+                                    rx.text("Owner: " + model["owner"].to_string(), font_size="13px", color="#64748b"),
+                                    rx.text("Dept: " + model["department"].to_string(), font_size="13px", color="#64748b"),
+                                    spacing="5", margin_top="10px"
+                                ),
+                                align_items="start", flex="1"
+                            ),
+                            rx.vstack(
+                                rx.cond(
+                                    model["accuracy"] != None,
+                                    rx.text("Accuracy: " + model["accuracy"].to_string(), font_size="13px", color="#64748b"),
+                                    rx.fragment()
+                                ),
+                                rx.cond(
+                                    model["pii_involved"],
+                                    rx.badge("PII Data", color_scheme="red"),
+                                    rx.fragment()
+                                ),
+                                rx.cond(
+                                    model["automated_decisions"],
+                                    rx.badge("Auto Decisions", color_scheme="orange"),
+                                    rx.fragment()
+                                ),
+                                align_items="end", spacing="2"
+                            ),
+                            width="100%", align_items="start"
+                        ),
+                        bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0", margin_bottom="15px"
+                    )
+                ),
+                
+                bg="white", padding="30px", border_radius="12px", border="1px solid #e2e8f0"
+            ),
+            
+            spacing="6", width="100%"
+        )
+    )
+
+
+# AI Assessments Page
+@rx.page(route="/ai-assessments", title="AI Assessments - GRC Platform", on_load=AIGovernanceState.load_all_data)
+def ai_assessments() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("AI Risk Assessments", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Evaluate AI models for bias, privacy, security, and transparency risks", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            rx.box(
+                rx.hstack(
+                    rx.heading("Assessment Records", font_size="24px", font_weight="600"),
+                    rx.button(
+                        rx.icon("plus", size=20), " New Assessment",
+                        on_click=AIGovernanceState.toggle_assessment_form,
+                        bg="#3b82f6", color="white", _hover={"bg": "#2563eb"},
+                        padding="12px 20px", border_radius="8px", font_weight="600"
+                    ),
+                    justify="between", width="100%", margin_bottom="20px"
+                ),
+                
+                # Create Form
+                rx.cond(
+                    AIGovernanceState.show_assessment_form,
+                    rx.box(
+                        rx.vstack(
+                            rx.input(placeholder="Model ID to assess", value=AIGovernanceState.assessment_model_id, on_change=AIGovernanceState.set_assessment_model_id, width="100%"),
+                            rx.grid(
+                                rx.vstack(rx.text("Bias Risk", font_size="13px", color="#64748b"), rx.select(["Low", "Medium", "High", "Critical"], value=AIGovernanceState.assessment_bias_risk, on_change=AIGovernanceState.set_assessment_bias_risk), spacing="1"),
+                                rx.vstack(rx.text("Privacy Risk", font_size="13px", color="#64748b"), rx.select(["Low", "Medium", "High", "Critical"], value=AIGovernanceState.assessment_privacy_risk, on_change=AIGovernanceState.set_assessment_privacy_risk), spacing="1"),
+                                rx.vstack(rx.text("Security Risk", font_size="13px", color="#64748b"), rx.select(["Low", "Medium", "High", "Critical"], value=AIGovernanceState.assessment_security_risk, on_change=AIGovernanceState.set_assessment_security_risk), spacing="1"),
+                                rx.vstack(rx.text("Transparency Risk", font_size="13px", color="#64748b"), rx.select(["Low", "Medium", "High", "Critical"], value=AIGovernanceState.assessment_transparency_risk, on_change=AIGovernanceState.set_assessment_transparency_risk), spacing="1"),
+                                columns="4", spacing="3", width="100%"
+                            ),
+                            rx.text_area(placeholder="Findings (one per line)", value=AIGovernanceState.assessment_findings, on_change=AIGovernanceState.set_assessment_findings, width="100%"),
+                            rx.text_area(placeholder="Recommendations (one per line)", value=AIGovernanceState.assessment_recommendations, on_change=AIGovernanceState.set_assessment_recommendations, width="100%"),
+                            rx.hstack(
+                                rx.button("Create Assessment", on_click=AIGovernanceState.create_assessment, bg="#3b82f6", color="white"),
+                                rx.button("Cancel", on_click=AIGovernanceState.toggle_assessment_form, bg="#e2e8f0"),
+                                spacing="3"
+                            ),
+                            spacing="4", width="100%"
+                        ),
+                        bg="#eff6ff", padding="20px", border_radius="8px", margin_bottom="20px"
+                    ),
+                    rx.fragment()
+                ),
+                
+                # Assessments List
+                rx.foreach(
+                    AIGovernanceState.ai_assessments,
+                    lambda assess: rx.box(
+                        rx.vstack(
+                            rx.hstack(
+                                rx.text(assess["model_name"], font_size="18px", font_weight="600"),
+                                rx.badge(assess["overall_risk"] + " Risk", color_scheme=rx.cond(assess["overall_risk"] == "Critical", "red", rx.cond(assess["overall_risk"] == "High", "orange", rx.cond(assess["overall_risk"] == "Medium", "yellow", "green")))),
+                                rx.badge(assess["status"], color_scheme="blue"),
+                                spacing="2"
+                            ),
+                            rx.text("Assessed: " + assess["assessment_date"].to_string() + " by " + assess["assessor"].to_string(), font_size="13px", color="#64748b"),
+                            rx.grid(
+                                rx.box(rx.text("Bias", font_size="12px", color="#64748b"), rx.badge(assess["bias_risk"], color_scheme=rx.cond(assess["bias_risk"] == "High", "orange", rx.cond(assess["bias_risk"] == "Critical", "red", "gray"))), padding="10px", bg="#f8fafc", border_radius="6px"),
+                                rx.box(rx.text("Privacy", font_size="12px", color="#64748b"), rx.badge(assess["privacy_risk"], color_scheme=rx.cond(assess["privacy_risk"] == "High", "orange", rx.cond(assess["privacy_risk"] == "Critical", "red", "gray"))), padding="10px", bg="#f8fafc", border_radius="6px"),
+                                rx.box(rx.text("Security", font_size="12px", color="#64748b"), rx.badge(assess["security_risk"], color_scheme=rx.cond(assess["security_risk"] == "High", "orange", rx.cond(assess["security_risk"] == "Critical", "red", "gray"))), padding="10px", bg="#f8fafc", border_radius="6px"),
+                                rx.box(rx.text("Transparency", font_size="12px", color="#64748b"), rx.badge(assess["transparency_risk"], color_scheme=rx.cond(assess["transparency_risk"] == "High", "orange", rx.cond(assess["transparency_risk"] == "Critical", "red", "gray"))), padding="10px", bg="#f8fafc", border_radius="6px"),
+                                columns="4", spacing="3", width="100%", margin_top="15px"
+                            ),
+                            align_items="start", width="100%"
+                        ),
+                        bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0", margin_bottom="15px"
+                    )
+                ),
+                
+                bg="white", padding="30px", border_radius="12px", border="1px solid #e2e8f0"
+            ),
+            
+            spacing="6", width="100%"
+        )
+    )
+
+
+# Connectors Page
+@rx.page(route="/connectors", title="Connectors - GRC Platform", on_load=ConnectorState.load_all_data)
+def connectors() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("Integration Connectors", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Connect to cloud services for automated control testing", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            rx.box(
+                rx.heading("Available Connectors", font_size="24px", font_weight="600", margin_bottom="20px"),
+                
+                rx.foreach(
+                    ConnectorState.connectors,
+                    lambda conn: rx.box(
+                        rx.hstack(
+                            rx.box(
+                                rx.icon(
+                                    rx.cond(conn["provider"] == "AWS", "cloud", rx.cond(conn["provider"] == "GitHub", "github", rx.cond(conn["provider"] == "Okta", "key", "server"))),
+                                    size=28,
+                                    color=rx.cond(conn["status"] == "Connected", "#10b981", "#64748b")
+                                ),
+                                bg=rx.cond(conn["status"] == "Connected", "#f0fdf4", "#f8fafc"),
+                                padding="15px",
+                                border_radius="12px"
+                            ),
+                            rx.vstack(
+                                rx.hstack(
+                                    rx.text(conn["name"], font_size="18px", font_weight="600"),
+                                    rx.badge(conn["status"], color_scheme=rx.cond(conn["status"] == "Connected", "green", "gray")),
+                                    spacing="2"
+                                ),
+                                rx.text("Provider: " + conn["provider"].to_string() + " | Type: " + conn["type"].to_string(), font_size="14px", color="#64748b"),
+                                rx.cond(
+                                    conn["last_sync"] != None,
+                                    rx.text("Last sync: " + conn["last_sync"].to_string(), font_size="13px", color="#94a3b8"),
+                                    rx.fragment()
+                                ),
+                                align_items="start", flex="1"
+                            ),
+                            rx.button(
+                                rx.cond(conn["status"] == "Connected", "Disconnect", "Connect"),
+                                on_click=lambda: ConnectorState.toggle_connector(conn["id"], conn["status"]),
+                                bg=rx.cond(conn["status"] == "Connected", "#ef4444", "#10b981"),
+                                color="white",
+                                _hover={"opacity": 0.8}
+                            ),
+                            width="100%", align_items="center", spacing="4"
+                        ),
+                        bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0", margin_bottom="15px"
+                    )
+                ),
+                
+                bg="white", padding="30px", border_radius="12px", border="1px solid #e2e8f0"
+            ),
+            
+            spacing="6", width="100%"
+        )
+    )
+
+
+# Audit Logs Page
+@rx.page(route="/audit-logs", title="Audit Logs - GRC Platform", on_load=AuditLogState.load_all_data)
+def audit_logs() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("Audit Logs", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Track all user actions and system events", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            rx.box(
+                rx.heading("Recent Activity", font_size="24px", font_weight="600", margin_bottom="20px"),
+                
+                rx.foreach(
+                    AuditLogState.audit_logs,
+                    lambda log: rx.box(
+                        rx.hstack(
+                            rx.box(
+                                rx.icon(
+                                    rx.cond(log["action"] == "LOGIN", "log-in", rx.cond(log["action"] == "LOGOUT", "log-out", rx.cond(log["action"] == "CREATE", "plus", rx.cond(log["action"] == "UPDATE", "pencil", rx.cond(log["action"] == "DELETE", "trash", "eye"))))),
+                                    size=18,
+                                    color=rx.cond(log["action"] == "DELETE", "#ef4444", rx.cond(log["action"] == "CREATE", "#10b981", "#3b82f6"))
+                                ),
+                                bg="#f8fafc",
+                                padding="10px",
+                                border_radius="8px"
+                            ),
+                            rx.vstack(
+                                rx.hstack(
+                                    rx.badge(log["action"], color_scheme=rx.cond(log["action"] == "DELETE", "red", rx.cond(log["action"] == "CREATE", "green", "blue"))),
+                                    rx.text(log["resource"], font_size="14px", font_weight="500"),
+                                    spacing="2"
+                                ),
+                                rx.text(log["details"], font_size="14px", color="#64748b"),
+                                rx.text(log["user_email"].to_string() + " | " + log["timestamp"].to_string(), font_size="12px", color="#94a3b8"),
+                                align_items="start", spacing="1"
+                            ),
+                            width="100%", spacing="3"
+                        ),
+                        bg="white", padding="15px", border_radius="8px", border="1px solid #e2e8f0", margin_bottom="10px"
+                    )
+                ),
+                
+                bg="white", padding="30px", border_radius="12px", border="1px solid #e2e8f0"
+            ),
+            
+            spacing="6", width="100%"
+        )
+    )
+
+
 # Create main app
 app = rx.App(
     theme=rx.theme(
