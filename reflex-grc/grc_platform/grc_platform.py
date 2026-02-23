@@ -606,87 +606,9 @@ def controls() -> rx.Component:
                 margin_bottom="25px"
             ),
             
-            # Create Control Section
+            # Controls Section
             rx.box(
-                rx.hstack(
-                    rx.heading("Unified Controls (CCF)", font_size="24px", font_weight="600"),
-                    rx.button(
-                        rx.icon("plus", size=20),
-                        " Create Control",
-                        on_click=ControlState.toggle_create_form,
-                        bg="#3b82f6",
-                        color="white",
-                        _hover={"bg": "#2563eb"},
-                        padding="12px 20px",
-                        border_radius="8px",
-                        font_weight="600"
-                    ),
-                    justify="between",
-                    width="100%",
-                    margin_bottom="20px"
-                ),
-                
-                # Create Form
-                rx.cond(
-                    ControlState.show_create_form,
-                    rx.box(
-                        rx.vstack(
-                            rx.input(
-                                placeholder="CCF ID (e.g., CCF-AC-001)",
-                                value=ControlState.new_control_ccf_id,
-                                on_change=ControlState.set_new_control_ccf_id,
-                                width="100%"
-                            ),
-                            rx.input(
-                                placeholder="Control Name",
-                                value=ControlState.new_control_name,
-                                on_change=ControlState.set_new_control_name,
-                                width="100%"
-                            ),
-                            rx.text_area(
-                                placeholder="Description",
-                                value=ControlState.new_control_description,
-                                on_change=ControlState.set_new_control_description,
-                                width="100%"
-                            ),
-                            rx.select(
-                                ["Preventive", "Detective", "Corrective"],
-                                value=ControlState.new_control_type,
-                                on_change=ControlState.set_new_control_type,
-                                width="100%"
-                            ),
-                            rx.input(
-                                placeholder="Owner",
-                                value=ControlState.new_control_owner,
-                                on_change=ControlState.set_new_control_owner,
-                                width="100%"
-                            ),
-                            rx.hstack(
-                                rx.button(
-                                    "Create Control",
-                                    on_click=ControlState.create_control,
-                                    bg="#3b82f6",
-                                    color="white",
-                                    _hover={"bg": "#2563eb"}
-                                ),
-                                rx.button(
-                                    "Cancel",
-                                    on_click=ControlState.toggle_create_form,
-                                    bg="#e2e8f0",
-                                    color="#0f172a"
-                                ),
-                                spacing="3"
-                            ),
-                            spacing="4",
-                            width="100%"
-                        ),
-                        bg="#f8fafc",
-                        padding="20px",
-                        border_radius="8px",
-                        margin_bottom="20px"
-                    ),
-                    rx.fragment()
-                ),
+                rx.heading("Unified Controls (CCF)", font_size="24px", font_weight="600", margin_bottom="20px"),
                 
                 # Controls List with Expandable Mapping Details
                 rx.foreach(
