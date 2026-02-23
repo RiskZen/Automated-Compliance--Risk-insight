@@ -2079,7 +2079,7 @@ def ai_assessments() -> rx.Component:
                         rx.vstack(
                             rx.hstack(
                                 rx.text(assess["model_name"], font_size="18px", font_weight="600"),
-                                rx.badge(assess["overall_risk"] + " Risk", color_scheme=rx.cond(assess["overall_risk"] == "Critical", "red", rx.cond(assess["overall_risk"] == "High", "orange", rx.cond(assess["overall_risk"] == "Medium", "yellow", "green")))),
+                                rx.badge(assess["overall_risk"], color_scheme=rx.cond(assess["overall_risk"] == "Critical", "red", rx.cond(assess["overall_risk"] == "High", "orange", rx.cond(assess["overall_risk"] == "Medium", "yellow", "green")))),
                                 rx.badge(assess["status"], color_scheme="blue"),
                                 spacing="2"
                             ),
