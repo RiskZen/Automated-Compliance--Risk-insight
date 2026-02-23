@@ -3,8 +3,97 @@ import reflex as rx
 from typing import Dict, Any
 from .state import (
     GRCState, FrameworkState, ControlState, PolicyState, RiskState,
-    TestingState, IssueState, KRIState, KCIState, HeatmapState
+    TestingState, IssueState, KRIState, KCIState, HeatmapState,
+    AuthState, AIGovernanceState, AuditLogState, ConnectorState
 )
+
+
+# Login Page
+@rx.page(route="/login", title="Login - GRC Platform")
+def login() -> rx.Component:
+    return rx.center(
+        rx.box(
+            rx.vstack(
+                rx.hstack(
+                    rx.icon("shield-check", size=40, color="#3b82f6"),
+                    rx.vstack(
+                        rx.text("GRC Platform", font_size="28px", font_weight="bold", color="#0f172a"),
+                        rx.text("Governance, Risk & Compliance", font_size="14px", color="#64748b"),
+                        spacing="0",
+                        align_items="start"
+                    ),
+                    spacing="3",
+                    margin_bottom="30px"
+                ),
+                
+                rx.text("Sign In", font_size="24px", font_weight="600", color="#0f172a", margin_bottom="20px"),
+                
+                rx.cond(
+                    AuthState.login_error != "",
+                    rx.box(
+                        rx.text(AuthState.login_error, color="white", font_size="14px"),
+                        bg="#ef4444",
+                        padding="12px 20px",
+                        border_radius="8px",
+                        width="100%",
+                        margin_bottom="15px"
+                    ),
+                    rx.fragment()
+                ),
+                
+                rx.input(
+                    placeholder="Email address",
+                    value=AuthState.login_email,
+                    on_change=AuthState.set_login_email,
+                    width="100%",
+                    height="48px",
+                    border_radius="8px",
+                    margin_bottom="15px"
+                ),
+                rx.input(
+                    placeholder="Password",
+                    type="password",
+                    value=AuthState.login_password,
+                    on_change=AuthState.set_login_password,
+                    on_key_down=lambda e: AuthState.login() if e.key == "Enter" else None,
+                    width="100%",
+                    height="48px",
+                    border_radius="8px",
+                    margin_bottom="20px"
+                ),
+                rx.button(
+                    "Sign In",
+                    on_click=AuthState.login,
+                    width="100%",
+                    height="48px",
+                    bg="#3b82f6",
+                    color="white",
+                    font_weight="600",
+                    border_radius="8px",
+                    _hover={"bg": "#2563eb"},
+                    cursor="pointer"
+                ),
+                
+                rx.text("Demo Credentials:", font_size="13px", color="#64748b", margin_top="30px", font_weight="600"),
+                rx.vstack(
+                    rx.text("admin@grcplatform.com / admin123", font_size="12px", color="#94a3b8"),
+                    rx.text("auditor@grcplatform.com / auditor123", font_size="12px", color="#94a3b8"),
+                    spacing="1",
+                    align_items="center"
+                ),
+                
+                spacing="0",
+                width="100%"
+            ),
+            bg="white",
+            padding="40px",
+            border_radius="16px",
+            box_shadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            width="400px"
+        ),
+        min_height="100vh",
+        bg="linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)"
+    )
 
 # Sidebar Component
 def sidebar() -> rx.Component:
