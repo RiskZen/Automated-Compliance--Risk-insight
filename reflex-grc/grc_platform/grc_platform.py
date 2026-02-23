@@ -579,34 +579,14 @@ def frameworks() -> rx.Component:
     )
 
 
-# Control Mapping Page - Simplified with expandable details
+# Control Mapping Page - Simplified display
 @rx.page(route="/controls", title="Control Mapping - GRC Platform", on_load=ControlState.load_all_data)
 def controls() -> rx.Component:
     return layout(
         rx.vstack(
             rx.heading("Control Mapping", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
-            rx.text("Map framework controls → Unified CCF → Internal policies", font_size="18px", color="#64748b", margin_bottom="30px"),
+            rx.text("Unified controls mapped to framework requirements and policies", font_size="18px", color="#64748b", margin_bottom="30px"),
             
-            # Info Banner
-            rx.box(
-                rx.hstack(
-                    rx.icon("info", size=20, color="#3b82f6"),
-                    rx.text(
-                        "Expand any control to see its framework mappings and linked policies",
-                        font_size="14px",
-                        color="#1e40af"
-                    ),
-                    spacing="3",
-                    align_items="center"
-                ),
-                bg="#eff6ff",
-                padding="15px 20px",
-                border_radius="10px",
-                border="1px solid #bfdbfe",
-                margin_bottom="25px"
-            ),
-            
-            # Controls Section
             rx.box(
                 rx.heading("Unified Controls (CCF)", font_size="24px", font_weight="600", margin_bottom="20px"),
                 
@@ -614,120 +594,48 @@ def controls() -> rx.Component:
                 rx.foreach(
                     ControlState.unified_controls,
                     lambda ctrl: rx.box(
-                        rx.vstack(
-                            # Control Header
-                            rx.hstack(
-                                rx.vstack(
-                                    rx.hstack(
-                                        rx.badge(ctrl["ccf_id"], color_scheme="blue", font_family="monospace"),
-                                        rx.text(ctrl["name"], font_size="18px", font_weight="600", color="#0f172a"),
-                                        rx.badge(ctrl["status"], color_scheme=rx.cond(ctrl["status"] == "Effective", "green", rx.cond(ctrl["status"] == "Needs Improvement", "orange", "gray"))),
-                                        spacing="3"
-                                    ),
-                                    rx.text(ctrl["description"], font_size="14px", color="#64748b", margin_top="8px"),
-                                    rx.hstack(
-                                        rx.text("Type: " + ctrl["control_type"].to_string(), font_size="13px", color="#64748b"),
-                                        rx.text("Owner: " + ctrl["owner"].to_string(), font_size="13px", color="#64748b"),
-                                        spacing="5",
-                                        margin_top="10px"
-                                    ),
-                                    align_items="start",
-                                    flex="1"
+                        rx.hstack(
+                            rx.vstack(
+                                rx.hstack(
+                                    rx.badge(ctrl["ccf_id"], color_scheme="blue", font_family="monospace"),
+                                    rx.text(ctrl["name"], font_size="18px", font_weight="600", color="#0f172a"),
+                                    rx.badge(ctrl["status"], color_scheme=rx.cond(ctrl["status"] == "Effective", "green", rx.cond(ctrl["status"] == "Needs Improvement", "orange", "gray"))),
+                                    spacing="3"
                                 ),
-                                rx.button(
-                                    rx.cond(
-                                        ControlState.expanded_controls.contains(ctrl["id"]),
-                                        rx.hstack(rx.icon("chevron-up", size=18), rx.text("Hide Mappings"), spacing="2"),
-                                        rx.hstack(rx.icon("chevron-down", size=18), rx.text("View Mappings"), spacing="2")
-                                    ),
-                                    on_click=lambda: ControlState.toggle_control_details(ctrl["id"]),
-                                    bg="#f8fafc",
-                                    color="#64748b",
-                                    border="1px solid #e2e8f0",
-                                    _hover={"bg": "#f1f5f9"}
+                                rx.text(ctrl["description"], font_size="14px", color="#64748b", margin_top="8px"),
+                                rx.hstack(
+                                    rx.text("Type: " + ctrl["control_type"].to_string(), font_size="13px", color="#64748b"),
+                                    rx.text("Frequency: " + ctrl["frequency"].to_string(), font_size="13px", color="#64748b"),
+                                    rx.text("Owner: " + ctrl["owner"].to_string(), font_size="13px", color="#64748b"),
+                                    spacing="5",
+                                    margin_top="10px"
                                 ),
-                                width="100%",
-                                align_items="start"
+                                align_items="start",
+                                flex="1"
                             ),
-                            
-                            # Expandable Mapping Details
-                            rx.cond(
-                                ControlState.expanded_controls.contains(ctrl["id"]),
-                                rx.box(
-                                    rx.grid(
-                                        # Framework Mappings
-                                        rx.box(
-                                            rx.hstack(
-                                                rx.icon("shield", size=18, color="#3b82f6"),
-                                                rx.text("Framework Mappings", font_size="14px", font_weight="600", color="#3b82f6"),
-                                                spacing="2"
-                                            ),
-                                            rx.foreach(
-                                                ctrl["mapped_framework_controls"],
-                                                lambda m: rx.box(
-                                                    rx.hstack(
-                                                        rx.badge(m["control_id"], color_scheme="blue", size="1"),
-                                                        rx.text(m["framework"].to_string(), font_size="12px", color="#64748b"),
-                                                        spacing="2"
-                                                    ),
-                                                    rx.text(m["control_name"], font_size="12px", color="#0f172a", margin_top="3px"),
-                                                    bg="white",
-                                                    padding="10px",
-                                                    border_radius="6px",
-                                                    border="1px solid #e2e8f0",
-                                                    margin_top="8px"
-                                                )
-                                            ),
-                                            bg="#eff6ff",
-                                            padding="15px",
-                                            border_radius="8px"
-                                        ),
-                                        # Policy Mappings
-                                        rx.box(
-                                            rx.hstack(
-                                                rx.icon("file-text", size=18, color="#8b5cf6"),
-                                                rx.text("Linked Policies", font_size="14px", font_weight="600", color="#8b5cf6"),
-                                                spacing="2"
-                                            ),
-                                            rx.foreach(
-                                                ctrl["mapped_policies"],
-                                                lambda p: rx.box(
-                                                    rx.hstack(
-                                                        rx.badge(p["policy_id"], color_scheme="purple", size="1"),
-                                                        rx.text(p["policy_name"], font_size="12px", color="#0f172a"),
-                                                        spacing="2"
-                                                    ),
-                                                    bg="white",
-                                                    padding="10px",
-                                                    border_radius="6px",
-                                                    border="1px solid #e2e8f0",
-                                                    margin_top="8px"
-                                                )
-                                            ),
-                                            bg="#faf5ff",
-                                            padding="15px",
-                                            border_radius="8px"
-                                        ),
-                                        columns="2",
-                                        spacing="4",
-                                        width="100%"
-                                    ),
-                                    margin_top="15px",
-                                    padding="15px",
-                                    bg="#f8fafc",
-                                    border_radius="8px"
+                            rx.vstack(
+                                rx.hstack(
+                                    rx.icon("layers", size=16, color="#3b82f6"),
+                                    rx.text("Frameworks", font_size="12px", color="#3b82f6"),
+                                    spacing="1"
                                 ),
-                                rx.fragment()
+                                rx.hstack(
+                                    rx.icon("file-text", size=16, color="#8b5cf6"),
+                                    rx.text("Policies", font_size="12px", color="#8b5cf6"),
+                                    spacing="1"
+                                ),
+                                spacing="2",
+                                align_items="end"
                             ),
-                            
-                            spacing="0",
-                            width="100%"
+                            width="100%",
+                            align_items="start"
                         ),
                         bg="white",
                         padding="20px",
                         border_radius="12px",
                         border="1px solid #e2e8f0",
-                        margin_bottom="15px"
+                        margin_bottom="15px",
+                        _hover={"border_color": "#3b82f6"}
                     )
                 ),
                 
