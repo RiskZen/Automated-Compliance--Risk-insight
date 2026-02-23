@@ -713,122 +713,62 @@ def policies() -> rx.Component:
         )
     )
 
-# Risks Page with AI
+# Risks Page - Simplified
 @rx.page(route="/risks", title="Risk Management - GRC Platform", on_load=RiskState.load_all_data)
 def risks() -> rx.Component:
     return layout(
         rx.vstack(
             rx.heading("Risk Management", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
-            rx.text("Manage risks with AI-powered insights from Google Gemini", font_size="18px", color="#64748b", margin_bottom="30px"),
+            rx.text("Track and manage organizational risks", font_size="18px", color="#64748b", margin_bottom="30px"),
             
-            # AI Banner
-            rx.box(
-                rx.hstack(
-                    rx.box(
-                        rx.icon("sparkles", size=32, color="white"),
-                        bg="white",
-                        bg_clip="padding-box",
-                        padding="12px",
-                        border_radius="50%"
-                    ),
-                    rx.vstack(
-                        rx.text("AI-Powered Risk Suggestions", font_size="20px", font_weight="bold", color="white"),
-                        rx.text("Let Google Gemini suggest top 10 risks", font_size="14px", color="rgba(255,255,255,0.9)"),
-                        spacing="1",
-                        align_items="start"
-                    ),
-                    rx.button(
-                        rx.cond(
-                            RiskState.loading_ai,
-                            rx.spinner(size="2"),
-                            rx.hstack(
-                                rx.icon("brain", size=20),
-                                rx.text("Get AI Suggestions"),
-                                spacing="2"
-                            )
-                        ),
-                        on_click=RiskState.get_ai_risk_suggestions,
-                        bg="white",
-                        color="#3b82f6",
-                        _hover={"bg": "rgba(255,255,255,0.9)"},
-                        padding="12px 24px",
-                        border_radius="8px",
-                        font_weight="600"
-                    ),
-                    justify="between",
-                    align_items="center",
-                    width="100%"
-                ),
-                background="linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                padding="30px",
-                border_radius="12px",
-                margin_bottom="30px"
-            ),
-            
-            # Create Risk
             rx.box(
                 rx.hstack(
                     rx.heading("Risks", font_size="24px", font_weight="600"),
-                    rx.button(
-                        rx.icon("plus", size=20),
-                        " Add Risk",
-                        on_click=RiskState.toggle_risk_form,
-                        bg="#3b82f6",
-                        color="white"
-                    ),
-                    justify="between",
-                    width="100%",
-                    margin_bottom="20px"
+                    rx.button(rx.icon("plus", size=20), " Add Risk", on_click=RiskState.toggle_risk_form, bg="#3b82f6", color="white"),
+                    justify="between", width="100%", margin_bottom="20px"
                 ),
                 
-                # Risks List
+                rx.cond(
+                    RiskState.show_risk_form,
+                    rx.box(
+                        rx.vstack(
+                            rx.input(placeholder="Risk Name", value=RiskState.new_risk_name, on_change=RiskState.set_new_risk_name, width="100%"),
+                            rx.text_area(placeholder="Description", value=RiskState.new_risk_description, on_change=RiskState.set_new_risk_description, width="100%"),
+                            rx.select(["Security", "AI Governance", "Compliance", "Operations", "Financial", "Privacy"], value=RiskState.new_risk_category, on_change=RiskState.set_new_risk_category, width="100%"),
+                            rx.input(placeholder="Owner", value=RiskState.new_risk_owner, on_change=RiskState.set_new_risk_owner, width="100%"),
+                            rx.hstack(rx.button("Create", on_click=RiskState.create_risk, bg="#3b82f6", color="white"), rx.button("Cancel", on_click=RiskState.toggle_risk_form, bg="#e2e8f0"), spacing="3"),
+                            spacing="4", width="100%"
+                        ),
+                        bg="#f8fafc", padding="20px", border_radius="8px", margin_bottom="20px"
+                    ),
+                    rx.fragment()
+                ),
+                
                 rx.foreach(
                     RiskState.risks,
                     lambda risk: rx.box(
-                        rx.vstack(
-                            rx.hstack(
-                                rx.text(risk["name"], font_size="18px", font_weight="600"),
-                                rx.badge(risk["category"], color_scheme="blue"),
-                                spacing="3"
+                        rx.hstack(
+                            rx.vstack(
+                                rx.hstack(rx.text(risk["name"], font_size="18px", font_weight="600"), rx.badge(risk["category"], color_scheme="blue"), spacing="3"),
+                                rx.text(risk["description"], font_size="14px", color="#64748b", margin_top="5px"),
+                                rx.text("Owner: " + risk["owner"].to_string(), font_size="13px", color="#64748b", margin_top="5px"),
+                                align_items="start", flex="1"
                             ),
-                            rx.text(risk["description"], font_size="14px", color="#64748b"),
                             rx.hstack(
-                                rx.vstack(
-                                    rx.text("Inherent Risk", font_size="12px", color="#64748b"),
-                                    rx.text(risk["inherent_risk_score"], font_size="20px", font_weight="bold", color="#ef4444"),
-                                    spacing="0"
-                                ),
-                                rx.vstack(
-                                    rx.text("Residual Risk", font_size="12px", color="#64748b"),
-                                    rx.text(risk["residual_risk_score"], font_size="20px", font_weight="bold", color="#10b981"),
-                                    spacing="0"
-                                ),
-                                rx.vstack(
-                                    rx.text("Owner", font_size="12px", color="#64748b"),
-                                    rx.text(risk["owner"], font_size="14px", font_weight="600"),
-                                    spacing="0"
-                                ),
-                                spacing="8",
-                                margin_top="15px"
+                                rx.vstack(rx.text("Inherent", font_size="11px", color="#64748b"), rx.text(risk["inherent_risk_score"], font_size="24px", font_weight="bold", color="#ef4444"), spacing="0", align_items="center"),
+                                rx.vstack(rx.text("Residual", font_size="11px", color="#64748b"), rx.text(risk["residual_risk_score"], font_size="24px", font_weight="bold", color="#10b981"), spacing="0", align_items="center"),
+                                spacing="4"
                             ),
-                            align_items="start"
+                            width="100%", align_items="start"
                         ),
-                        bg="white",
-                        padding="20px",
-                        border_radius="12px",
-                        border="1px solid #e2e8f0",
-                        margin_bottom="15px"
+                        bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0", margin_bottom="15px"
                     )
                 ),
                 
-                bg="white",
-                padding="30px",
-                border_radius="12px",
-                border="1px solid #e2e8f0"
+                bg="white", padding="30px", border_radius="12px", border="1px solid #e2e8f0"
             ),
             
-            spacing="6",
-            width="100%"
+            spacing="6", width="100%"
         )
     )
 
