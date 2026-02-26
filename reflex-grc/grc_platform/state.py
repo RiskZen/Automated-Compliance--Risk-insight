@@ -155,18 +155,31 @@ class ControlState(GRCState):
     """State for control management"""
     
     selected_control_id: str = ""
-    show_control_details: bool = False
-    expanded_controls: list[str] = []
     
-    def toggle_control_details(self, control_id: str):
-        """Toggle control details expansion"""
-        if control_id in self.expanded_controls:
-            self.expanded_controls = [c for c in self.expanded_controls if c != control_id]
+    def toggle_control_details(self, ccf_id: str):
+        """Toggle control details expansion (one at a time)"""
+        if self.selected_control_id == ccf_id:
+            self.selected_control_id = ""
         else:
-            self.expanded_controls = self.expanded_controls + [control_id]
+            self.selected_control_id = ccf_id
     
-    def is_control_expanded(self, control_id: str) -> bool:
-        return control_id in self.expanded_controls
+    @rx.var
+    def selected_fw_mappings(self) -> list[str]:
+        """Return framework mappings for the selected control as formatted strings"""
+        for ctrl in self.unified_controls:
+            if ctrl.get("ccf_id") == self.selected_control_id:
+                return [f"{m['framework']} | {m['control_id']}: {m['control_name']}" 
+                        for m in ctrl.get("mapped_framework_controls", [])]
+        return []
+    
+    @rx.var
+    def selected_pol_mappings(self) -> list[str]:
+        """Return policy mappings for the selected control as formatted strings"""
+        for ctrl in self.unified_controls:
+            if ctrl.get("ccf_id") == self.selected_control_id:
+                return [f"{m['policy_id']}: {m['policy_name']}" 
+                        for m in ctrl.get("mapped_policies", [])]
+        return []
 
 
 class PolicyState(GRCState):
