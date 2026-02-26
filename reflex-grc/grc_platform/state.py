@@ -191,6 +191,12 @@ class RiskState(GRCState):
     new_risk_owner: str = ""
     show_risk_form: bool = False
     
+    # AI Suggestion state
+    ai_suggestions: list[dict[str, Any]] = []
+    ai_loading: bool = False
+    show_ai_suggestions: bool = False
+    ai_industry: str = "General"
+    
     def set_new_risk_name(self, value: str):
         self.new_risk_name = value
     
@@ -203,8 +209,49 @@ class RiskState(GRCState):
     def set_new_risk_owner(self, value: str):
         self.new_risk_owner = value
     
+    def set_ai_industry(self, value: str):
+        self.ai_industry = value
+    
     def toggle_risk_form(self):
         self.show_risk_form = not self.show_risk_form
+    
+    def toggle_ai_suggestions(self):
+        self.show_ai_suggestions = not self.show_ai_suggestions
+    
+    def get_ai_suggestions(self):
+        """Get AI-powered risk suggestions"""
+        self.ai_loading = True
+        self.show_ai_suggestions = True
+        try:
+            from .ai_service import ai_service
+            suggestions = ai_service.get_risk_suggestions(self.ai_industry)
+            self.ai_suggestions = suggestions
+        except Exception as e:
+            print(f"[ERROR] AI suggestions failed: {e}")
+            self.ai_suggestions = []
+        self.ai_loading = False
+    
+    def add_suggested_risk(self, index: int):
+        """Add a suggested risk to the risk register"""
+        if index < len(self.ai_suggestions):
+            suggestion = self.ai_suggestions[index]
+            risk = {
+                "id": str(uuid.uuid4()),
+                "name": suggestion.get("name", ""),
+                "description": suggestion.get("description", ""),
+                "category": suggestion.get("category", "Security"),
+                "inherent_risk_score": int(suggestion.get("inherent_score", 5)),
+                "residual_risk_score": max(1, int(suggestion.get("inherent_score", 5)) - 3),
+                "status": "Active",
+                "owner": self.current_user.get("name", "Unassigned"),
+                "treatment": "Mitigate",
+                "kri_ids": [],
+                "linked_control_ids": [],
+                "created_at": datetime.utcnow().isoformat()
+            }
+            db_service.create_risk(risk)
+            self.load_all_data()
+            return rx.toast.success(f"Risk '{suggestion.get('name', '')}' added")
     
     def create_risk(self):
         """Create new risk"""
