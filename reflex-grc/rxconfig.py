@@ -5,5 +5,5 @@ config = rx.Config(
     db_url="sqlite:///reflex.db",
     env=rx.Env.PROD,
     frontend_port=3000,
-    backend_port=3000,
+    backend_port=8002,
 )
