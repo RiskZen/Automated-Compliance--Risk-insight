@@ -757,9 +757,9 @@ def policies() -> rx.Component:
                                 ),
                                 rx.button(
                                     rx.cond(
-                                        PolicyState.expanded_policies.contains(pol["policy_id"]),
-                                        rx.hstack(rx.icon("chevron-up", size=16), rx.text("Hide Details", font_size="13px"), spacing="1"),
-                                        rx.hstack(rx.icon("chevron-down", size=16), rx.text("View Details", font_size="13px"), spacing="1"),
+                                        PolicyState.selected_policy_id == pol["policy_id"],
+                                        rx.hstack(rx.icon("chevron-up", size=16), rx.text("Hide", font_size="13px"), spacing="1"),
+                                        rx.hstack(rx.icon("chevron-down", size=16), rx.text("Details", font_size="13px"), spacing="1"),
                                     ),
                                     on_click=PolicyState.toggle_policy_details(pol["policy_id"]),
                                     variant="outline",
@@ -772,9 +772,9 @@ def policies() -> rx.Component:
                                 align_items="start"
                             ),
                             
-                            # Expandable details
+                            # Expandable details (uses computed vars)
                             rx.cond(
-                                PolicyState.expanded_policies.contains(pol["policy_id"]),
+                                PolicyState.selected_policy_id == pol["policy_id"],
                                 rx.box(
                                     rx.grid(
                                         # Mapped Controls
@@ -782,49 +782,45 @@ def policies() -> rx.Component:
                                             rx.hstack(
                                                 rx.icon("shield-check", size=18, color="#3b82f6"),
                                                 rx.text("Mapped Controls", font_size="15px", font_weight="600", color="#1e40af"),
-                                                spacing="2"
+                                                spacing="2",
+                                                margin_bottom="10px"
                                             ),
                                             rx.foreach(
-                                                pol["mapped_controls"],
-                                                lambda ctrl: rx.box(
-                                                    rx.hstack(
-                                                        rx.badge(ctrl["ccf_id"], color_scheme="blue", size="1", font_family="monospace"),
-                                                        rx.text(ctrl["control_name"], font_size="13px", font_weight="500", color="#0f172a"),
-                                                        spacing="2",
-                                                        align_items="center"
-                                                    ),
+                                                PolicyState.selected_ctrl_mappings,
+                                                lambda item: rx.box(
+                                                    rx.text(item, font_size="13px", color="#0f172a"),
                                                     padding="10px",
                                                     bg="white",
                                                     border_radius="6px",
-                                                    border="1px solid #e2e8f0",
-                                                    margin_top="8px"
+                                                    border="1px solid #dbeafe",
+                                                    margin_bottom="6px"
                                                 )
                                             ),
                                             padding="15px",
                                             bg="#eff6ff",
                                             border_radius="8px"
                                         ),
-                                        # Mapped Frameworks
+                                        # Applicable Frameworks
                                         rx.box(
                                             rx.hstack(
                                                 rx.icon("layers", size=18, color="#10b981"),
                                                 rx.text("Applicable Frameworks", font_size="15px", font_weight="600", color="#065f46"),
-                                                spacing="2"
+                                                spacing="2",
+                                                margin_bottom="10px"
                                             ),
                                             rx.foreach(
-                                                pol["mapped_frameworks"],
-                                                lambda fw_name: rx.box(
+                                                PolicyState.selected_fw_names,
+                                                lambda fw: rx.box(
                                                     rx.hstack(
                                                         rx.icon("shield", size=14, color="#10b981"),
-                                                        rx.text(fw_name, font_size="13px", font_weight="500", color="#0f172a"),
-                                                        spacing="2",
-                                                        align_items="center"
+                                                        rx.text(fw, font_size="13px", color="#0f172a"),
+                                                        spacing="2"
                                                     ),
                                                     padding="10px",
                                                     bg="white",
                                                     border_radius="6px",
-                                                    border="1px solid #e2e8f0",
-                                                    margin_top="8px"
+                                                    border="1px solid #d1fae5",
+                                                    margin_bottom="6px"
                                                 )
                                             ),
                                             padding="15px",
@@ -848,7 +844,7 @@ def policies() -> rx.Component:
                         padding="20px",
                         border_radius="12px",
                         border=rx.cond(
-                            PolicyState.expanded_policies.contains(pol["policy_id"]),
+                            PolicyState.selected_policy_id == pol["policy_id"],
                             "2px solid #8b5cf6",
                             "1px solid #e2e8f0"
                         ),
