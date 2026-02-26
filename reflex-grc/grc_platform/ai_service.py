@@ -6,9 +6,6 @@ import warnings
 from dotenv import load_dotenv
 
 warnings.filterwarnings("ignore", category=FutureWarning)
-load_dotenv()
-
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 class GeminiAIService:
     _instance = None
@@ -23,8 +20,10 @@ class GeminiAIService:
         if self._initialized:
             return
         self._initialized = True
-        if GOOGLE_API_KEY and GOOGLE_API_KEY != "your_gemini_api_key_here":
-            genai.configure(api_key=GOOGLE_API_KEY)
+        load_dotenv()
+        api_key = os.getenv("GOOGLE_API_KEY", "")
+        if api_key and api_key != "your_gemini_api_key_here":
+            genai.configure(api_key=api_key)
             self.model = genai.GenerativeModel('gemini-2.5-flash')
         else:
             self.model = None
