@@ -185,14 +185,31 @@ class ControlState(GRCState):
 class PolicyState(GRCState):
     """State for policy management"""
     
-    expanded_policies: list[str] = []
+    selected_policy_id: str = ""
     
     def toggle_policy_details(self, policy_id: str):
-        """Toggle policy details expansion"""
-        if policy_id in self.expanded_policies:
-            self.expanded_policies = [p for p in self.expanded_policies if p != policy_id]
+        """Toggle policy details expansion (one at a time)"""
+        if self.selected_policy_id == policy_id:
+            self.selected_policy_id = ""
         else:
-            self.expanded_policies = self.expanded_policies + [policy_id]
+            self.selected_policy_id = policy_id
+    
+    @rx.var
+    def selected_ctrl_mappings(self) -> list[str]:
+        """Return control mappings for the selected policy as formatted strings"""
+        for pol in self.policies:
+            if pol.get("policy_id") == self.selected_policy_id:
+                return [f"{m['ccf_id']}: {m['control_name']}" 
+                        for m in pol.get("mapped_controls", [])]
+        return []
+    
+    @rx.var
+    def selected_fw_names(self) -> list[str]:
+        """Return framework names for the selected policy"""
+        for pol in self.policies:
+            if pol.get("policy_id") == self.selected_policy_id:
+                return pol.get("mapped_frameworks", [])
+        return []
 
 
 class RiskState(GRCState):
