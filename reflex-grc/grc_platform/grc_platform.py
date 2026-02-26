@@ -734,7 +734,7 @@ def controls() -> rx.Component:
     )
 
 
-# Policies Page - Simplified
+# Policies Page - With expandable mapping details
 @rx.page(route="/policies", title="Policies - GRC Platform", on_load=PolicyState.load_all_data)
 def policies() -> rx.Component:
     return layout(
@@ -748,38 +748,124 @@ def policies() -> rx.Component:
                 rx.foreach(
                     PolicyState.policies,
                     lambda pol: rx.box(
-                        rx.hstack(
-                            rx.vstack(
-                                rx.hstack(
-                                    rx.badge(pol["policy_id"], color_scheme="purple", font_family="monospace"),
-                                    rx.text(pol["name"], font_size="18px", font_weight="600"),
-                                    rx.badge(pol["status"], color_scheme="green"),
-                                    rx.badge(pol["category"], color_scheme="blue"),
-                                    spacing="3"
+                        rx.vstack(
+                            # Policy header row
+                            rx.hstack(
+                                rx.vstack(
+                                    rx.hstack(
+                                        rx.badge(pol["policy_id"], color_scheme="purple", font_family="monospace"),
+                                        rx.text(pol["name"], font_size="18px", font_weight="600"),
+                                        rx.badge(pol["status"], color_scheme="green"),
+                                        rx.badge(pol["category"], color_scheme="blue"),
+                                        spacing="3"
+                                    ),
+                                    rx.text(pol["description"], font_size="14px", color="#64748b", margin_top="8px"),
+                                    rx.hstack(
+                                        rx.text("Owner: " + pol["owner"].to_string(), font_size="13px", color="#64748b"),
+                                        rx.text("Last Review: " + pol["last_reviewed"].to_string(), font_size="13px", color="#64748b"),
+                                        spacing="5",
+                                        margin_top="8px"
+                                    ),
+                                    align_items="start",
+                                    flex="1"
                                 ),
-                                rx.text(pol["description"], font_size="14px", color="#64748b", margin_top="8px"),
-                                rx.hstack(
-                                    rx.text("Owner: " + pol["owner"].to_string(), font_size="13px", color="#64748b"),
-                                    rx.text("Last Review: " + pol["last_reviewed"].to_string(), font_size="13px", color="#64748b"),
-                                    spacing="5",
-                                    margin_top="8px"
+                                rx.button(
+                                    rx.cond(
+                                        PolicyState.expanded_policies.contains(pol["policy_id"]),
+                                        rx.hstack(rx.icon("chevron-up", size=16), rx.text("Hide Details", font_size="13px"), spacing="1"),
+                                        rx.hstack(rx.icon("chevron-down", size=16), rx.text("View Details", font_size="13px"), spacing="1"),
+                                    ),
+                                    on_click=PolicyState.toggle_policy_details(pol["policy_id"]),
+                                    variant="outline",
+                                    color="#8b5cf6",
+                                    border_color="#8b5cf6",
+                                    size="2",
+                                    cursor="pointer"
                                 ),
-                                align_items="start",
-                                flex="1"
+                                width="100%",
+                                align_items="start"
                             ),
-                            rx.vstack(
-                                rx.hstack(rx.icon("shield-check", size=16, color="#3b82f6"), rx.text("Controls", font_size="12px", color="#3b82f6"), spacing="1"),
-                                rx.hstack(rx.icon("layers", size=16, color="#10b981"), rx.text("Frameworks", font_size="12px", color="#10b981"), spacing="1"),
-                                spacing="2",
-                                align_items="end"
+                            
+                            # Expandable details
+                            rx.cond(
+                                PolicyState.expanded_policies.contains(pol["policy_id"]),
+                                rx.box(
+                                    rx.grid(
+                                        # Mapped Controls
+                                        rx.box(
+                                            rx.hstack(
+                                                rx.icon("shield-check", size=18, color="#3b82f6"),
+                                                rx.text("Mapped Controls", font_size="15px", font_weight="600", color="#1e40af"),
+                                                spacing="2"
+                                            ),
+                                            rx.foreach(
+                                                pol["mapped_controls"],
+                                                lambda ctrl: rx.box(
+                                                    rx.hstack(
+                                                        rx.badge(ctrl["ccf_id"], color_scheme="blue", size="1", font_family="monospace"),
+                                                        rx.text(ctrl["control_name"], font_size="13px", font_weight="500", color="#0f172a"),
+                                                        spacing="2",
+                                                        align_items="center"
+                                                    ),
+                                                    padding="10px",
+                                                    bg="white",
+                                                    border_radius="6px",
+                                                    border="1px solid #e2e8f0",
+                                                    margin_top="8px"
+                                                )
+                                            ),
+                                            padding="15px",
+                                            bg="#eff6ff",
+                                            border_radius="8px"
+                                        ),
+                                        # Mapped Frameworks
+                                        rx.box(
+                                            rx.hstack(
+                                                rx.icon("layers", size=18, color="#10b981"),
+                                                rx.text("Applicable Frameworks", font_size="15px", font_weight="600", color="#065f46"),
+                                                spacing="2"
+                                            ),
+                                            rx.foreach(
+                                                pol["mapped_frameworks"],
+                                                lambda fw_name: rx.box(
+                                                    rx.hstack(
+                                                        rx.icon("shield", size=14, color="#10b981"),
+                                                        rx.text(fw_name, font_size="13px", font_weight="500", color="#0f172a"),
+                                                        spacing="2",
+                                                        align_items="center"
+                                                    ),
+                                                    padding="10px",
+                                                    bg="white",
+                                                    border_radius="6px",
+                                                    border="1px solid #e2e8f0",
+                                                    margin_top="8px"
+                                                )
+                                            ),
+                                            padding="15px",
+                                            bg="#f0fdf4",
+                                            border_radius="8px"
+                                        ),
+                                        columns="2",
+                                        spacing="4",
+                                        width="100%"
+                                    ),
+                                    margin_top="15px",
+                                    padding_top="15px",
+                                    border_top="1px dashed #cbd5e1"
+                                ),
+                                rx.fragment()
                             ),
-                            width="100%",
-                            align_items="start"
+                            
+                            width="100%"
                         ),
                         bg="white",
                         padding="20px",
                         border_radius="12px",
-                        border="1px solid #e2e8f0",
+                        border=rx.cond(
+                            PolicyState.expanded_policies.contains(pol["policy_id"]),
+                            "2px solid #8b5cf6",
+                            "1px solid #e2e8f0"
+                        ),
                         margin_bottom="15px",
                         _hover={"border_color": "#8b5cf6"}
                     )
