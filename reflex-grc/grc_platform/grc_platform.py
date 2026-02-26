@@ -882,7 +882,7 @@ def policies() -> rx.Component:
         )
     )
 
-# Risks Page - Simplified
+# Risks Page - With AI Suggestions
 @rx.page(route="/risks", title="Risk Management - GRC Platform", on_load=RiskState.load_all_data)
 def risks() -> rx.Component:
     return layout(
@@ -890,9 +890,116 @@ def risks() -> rx.Component:
             rx.heading("Risk Management", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
             rx.text("Track and manage organizational risks", font_size="18px", color="#64748b", margin_bottom="30px"),
             
+            # AI Suggestions Section
             rx.box(
                 rx.hstack(
-                    rx.heading("Risks", font_size="24px", font_weight="600"),
+                    rx.hstack(
+                        rx.icon("sparkles", size=22, color="#f59e0b"),
+                        rx.text("AI Risk Suggestions", font_size="20px", font_weight="600", color="#0f172a"),
+                        spacing="2"
+                    ),
+                    rx.hstack(
+                        rx.select(
+                            ["General", "Financial Services", "Healthcare", "Technology", "Manufacturing", "Retail", "Energy"],
+                            value=RiskState.ai_industry,
+                            on_change=RiskState.set_ai_industry,
+                            width="180px"
+                        ),
+                        rx.button(
+                            rx.cond(
+                                RiskState.ai_loading,
+                                rx.hstack(rx.spinner(size="1"), rx.text("Generating...", font_size="13px"), spacing="2"),
+                                rx.hstack(rx.icon("sparkles", size=16), rx.text("Suggest with AI", font_size="13px"), spacing="2"),
+                            ),
+                            on_click=RiskState.get_ai_suggestions,
+                            bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                            color="white",
+                            _hover={"opacity": 0.9},
+                            border_radius="8px",
+                            font_weight="600",
+                            is_disabled=RiskState.ai_loading,
+                            cursor="pointer"
+                        ),
+                        spacing="3"
+                    ),
+                    justify="between",
+                    width="100%",
+                    margin_bottom="15px"
+                ),
+                
+                # AI Suggestions Results
+                rx.cond(
+                    RiskState.show_ai_suggestions,
+                    rx.cond(
+                        RiskState.ai_loading,
+                        rx.center(
+                            rx.vstack(
+                                rx.spinner(size="3"),
+                                rx.text("AI is analyzing risks...", font_size="14px", color="#64748b"),
+                                spacing="3",
+                                align_items="center"
+                            ),
+                            padding="40px"
+                        ),
+                        rx.cond(
+                            RiskState.ai_suggestions.length() > 0,
+                            rx.vstack(
+                                rx.text("Click '+' to add a suggested risk to your register", font_size="13px", color="#64748b", margin_bottom="10px"),
+                                rx.foreach(
+                                    RiskState.ai_suggestions,
+                                    lambda suggestion, idx: rx.box(
+                                        rx.hstack(
+                                            rx.vstack(
+                                                rx.hstack(
+                                                    rx.text(suggestion["name"], font_size="15px", font_weight="600", color="#0f172a"),
+                                                    rx.badge(suggestion["category"], color_scheme="blue", size="1"),
+                                                    spacing="2"
+                                                ),
+                                                rx.text(suggestion["description"], font_size="13px", color="#64748b"),
+                                                rx.text("Inherent Score: " + suggestion["inherent_score"].to_string(), font_size="12px", color="#ef4444", font_weight="500"),
+                                                align_items="start",
+                                                flex="1",
+                                                spacing="1"
+                                            ),
+                                            rx.button(
+                                                rx.icon("plus", size=16),
+                                                on_click=RiskState.add_suggested_risk(idx),
+                                                bg="#10b981",
+                                                color="white",
+                                                size="2",
+                                                _hover={"bg": "#059669"},
+                                                cursor="pointer"
+                                            ),
+                                            width="100%",
+                                            align_items="center"
+                                        ),
+                                        padding="12px",
+                                        bg="#fffbeb",
+                                        border="1px solid #fde68a",
+                                        border_radius="8px",
+                                        margin_bottom="8px"
+                                    )
+                                ),
+                                width="100%"
+                            ),
+                            rx.text("No suggestions available", font_size="14px", color="#64748b", padding="20px")
+                        )
+                    ),
+                    rx.fragment()
+                ),
+                
+                bg="white",
+                padding="24px",
+                border_radius="12px",
+                border="1px solid #fde68a",
+                margin_bottom="20px",
+                box_shadow="sm"
+            ),
+            
+            # Risk Register
+            rx.box(
+                rx.hstack(
+                    rx.heading("Risk Register", font_size="24px", font_weight="600"),
                     rx.button(rx.icon("plus", size=20), " Add Risk", on_click=RiskState.toggle_risk_form, bg="#3b82f6", color="white"),
                     justify="between", width="100%", margin_bottom="20px"
                 ),
