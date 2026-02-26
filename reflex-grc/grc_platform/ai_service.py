@@ -2,14 +2,17 @@
 import google.generativeai as genai
 import os
 import json
+import warnings
 from dotenv import load_dotenv
 
+warnings.filterwarnings("ignore", category=FutureWarning)
 load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 class GeminiAIService:
     _instance = None
+    _initialized = False
     
     def __new__(cls):
         if cls._instance is None:
@@ -17,9 +20,12 @@ class GeminiAIService:
         return cls._instance
     
     def __init__(self):
-        if GOOGLE_API_KEY:
+        if self._initialized:
+            return
+        self._initialized = True
+        if GOOGLE_API_KEY and GOOGLE_API_KEY != "your_gemini_api_key_here":
             genai.configure(api_key=GOOGLE_API_KEY)
-            self.model = genai.GenerativeModel('gemini-pro')
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
         else:
             self.model = None
     
