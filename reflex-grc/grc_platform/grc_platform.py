@@ -590,12 +590,11 @@ def controls() -> rx.Component:
             rx.box(
                 rx.heading("Unified Controls (CCF)", font_size="24px", font_weight="600", margin_bottom="20px"),
                 
-                # Controls List
                 rx.foreach(
                     ControlState.unified_controls,
                     lambda ctrl: rx.box(
                         rx.vstack(
-                            # Control header row - clickable
+                            # Control header row
                             rx.hstack(
                                 rx.vstack(
                                     rx.hstack(
@@ -617,9 +616,9 @@ def controls() -> rx.Component:
                                 ),
                                 rx.button(
                                     rx.cond(
-                                        ControlState.expanded_controls.contains(ctrl["ccf_id"]),
-                                        rx.hstack(rx.icon("chevron-up", size=16), rx.text("Hide Mappings", font_size="13px"), spacing="1"),
-                                        rx.hstack(rx.icon("chevron-down", size=16), rx.text("View Mappings", font_size="13px"), spacing="1"),
+                                        ControlState.selected_control_id == ctrl["ccf_id"],
+                                        rx.hstack(rx.icon("chevron-up", size=16), rx.text("Hide", font_size="13px"), spacing="1"),
+                                        rx.hstack(rx.icon("chevron-down", size=16), rx.text("Mappings", font_size="13px"), spacing="1"),
                                     ),
                                     on_click=ControlState.toggle_control_details(ctrl["ccf_id"]),
                                     variant="outline",
@@ -632,64 +631,51 @@ def controls() -> rx.Component:
                                 align_items="start"
                             ),
                             
-                            # Expandable mapping details
+                            # Expandable mapping details (uses computed vars)
                             rx.cond(
-                                ControlState.expanded_controls.contains(ctrl["ccf_id"]),
+                                ControlState.selected_control_id == ctrl["ccf_id"],
                                 rx.box(
                                     rx.grid(
-                                        # Framework Mappings Column
+                                        # Framework Mappings
                                         rx.box(
                                             rx.hstack(
                                                 rx.icon("layers", size=18, color="#3b82f6"),
                                                 rx.text("Framework Mappings", font_size="15px", font_weight="600", color="#1e40af"),
-                                                spacing="2"
+                                                spacing="2",
+                                                margin_bottom="10px"
                                             ),
                                             rx.foreach(
-                                                ctrl["mapped_framework_controls"],
-                                                lambda mapping: rx.box(
-                                                    rx.hstack(
-                                                        rx.badge(mapping["control_id"], color_scheme="blue", size="1", font_family="monospace"),
-                                                        rx.vstack(
-                                                            rx.text(mapping["framework"], font_size="13px", font_weight="500", color="#0f172a"),
-                                                            rx.text(mapping["control_name"], font_size="12px", color="#64748b"),
-                                                            spacing="0",
-                                                            align_items="start"
-                                                        ),
-                                                        spacing="2",
-                                                        align_items="center"
-                                                    ),
+                                                ControlState.selected_fw_mappings,
+                                                lambda item: rx.box(
+                                                    rx.text(item, font_size="13px", color="#0f172a"),
                                                     padding="10px",
                                                     bg="white",
                                                     border_radius="6px",
-                                                    border="1px solid #e2e8f0",
-                                                    margin_top="8px"
+                                                    border="1px solid #dbeafe",
+                                                    margin_bottom="6px"
                                                 )
                                             ),
                                             padding="15px",
                                             bg="#eff6ff",
                                             border_radius="8px"
                                         ),
-                                        # Policy Mappings Column
+                                        # Policy Mappings
                                         rx.box(
                                             rx.hstack(
                                                 rx.icon("file-text", size=18, color="#8b5cf6"),
                                                 rx.text("Policy Mappings", font_size="15px", font_weight="600", color="#6d28d9"),
-                                                spacing="2"
+                                                spacing="2",
+                                                margin_bottom="10px"
                                             ),
                                             rx.foreach(
-                                                ctrl["mapped_policies"],
-                                                lambda pol: rx.box(
-                                                    rx.hstack(
-                                                        rx.badge(pol["policy_id"], color_scheme="purple", size="1", font_family="monospace"),
-                                                        rx.text(pol["policy_name"], font_size="13px", font_weight="500", color="#0f172a"),
-                                                        spacing="2",
-                                                        align_items="center"
-                                                    ),
+                                                ControlState.selected_pol_mappings,
+                                                lambda item: rx.box(
+                                                    rx.text(item, font_size="13px", color="#0f172a"),
                                                     padding="10px",
                                                     bg="white",
                                                     border_radius="6px",
-                                                    border="1px solid #e2e8f0",
-                                                    margin_top="8px"
+                                                    border="1px solid #e9d5ff",
+                                                    margin_bottom="6px"
                                                 )
                                             ),
                                             padding="15px",
@@ -713,7 +699,7 @@ def controls() -> rx.Component:
                         padding="20px",
                         border_radius="12px",
                         border=rx.cond(
-                            ControlState.expanded_controls.contains(ctrl["ccf_id"]),
+                            ControlState.selected_control_id == ctrl["ccf_id"],
                             "2px solid #3b82f6",
                             "1px solid #e2e8f0"
                         ),
