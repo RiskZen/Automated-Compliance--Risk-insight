@@ -169,19 +169,6 @@ def sidebar() -> rx.Component:
                 rx.text("TESTING & ISSUES", font_size="11px", color="#64748b", font_weight="600", padding_left="15px", margin_top="20px"),
                 rx.link(
                     rx.hstack(
-                        rx.icon("scan-search", size=20),
-                        rx.text("Gap Analysis", font_size="14px", font_weight="500"),
-                        rx.badge("AI", color_scheme="amber", size="1", variant="solid"),
-                        padding="12px 15px",
-                        border_radius="8px",
-                        _hover={"bg": "#1e293b"},
-                        width="100%"
-                    ),
-                    href="/gap-analysis",
-                    style={"text_decoration": "none", "color": "#cbd5e1"}
-                ),
-                rx.link(
-                    rx.hstack(
                         rx.icon("clipboard-check", size=20),
                         rx.text("Control Testing", font_size="14px", font_weight="500"),
                         padding="12px 15px",
@@ -205,7 +192,20 @@ def sidebar() -> rx.Component:
                     style={"text_decoration": "none", "color": "#cbd5e1"}
                 ),
                 
-                rx.text("RISK MANAGEMENT", font_size="11px", color="#64748b", font_weight="600", padding_left="15px", margin_top="20px"),
+                rx.text("AUDIT & COMPLIANCE", font_size="11px", color="#64748b", font_weight="600", padding_left="15px", margin_top="20px"),
+                rx.link(
+                    rx.hstack(
+                        rx.icon("scan-search", size=20),
+                        rx.text("Gap Analysis", font_size="14px", font_weight="500"),
+                        rx.badge("AI", color_scheme="amber", size="1", variant="solid"),
+                        padding="12px 15px",
+                        border_radius="8px",
+                        _hover={"bg": "#1e293b"},
+                        width="100%"
+                    ),
+                    href="/gap-analysis",
+                    style={"text_decoration": "none", "color": "#cbd5e1"}
+                ),
                 rx.link(
                     rx.hstack(
                         rx.icon("clipboard-list", size=20),
@@ -230,6 +230,8 @@ def sidebar() -> rx.Component:
                     href="/audit-readiness",
                     style={"text_decoration": "none", "color": "#cbd5e1"}
                 ),
+                
+                rx.text("RISK MANAGEMENT", font_size="11px", color="#64748b", font_weight="600", padding_left="15px", margin_top="20px"),
                 rx.link(
                     rx.hstack(
                         rx.icon("trending-up", size=20),
