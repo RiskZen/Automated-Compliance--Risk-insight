@@ -4,7 +4,8 @@ from typing import Dict, Any
 from .state import (
     GRCState, FrameworkState, ControlState, PolicyState, RiskState,
     TestingState, IssueState, KRIState, KCIState, HeatmapState,
-    AuthState, AIGovernanceState, AuditLogState, ConnectorState
+    AuthState, AIGovernanceState, AuditLogState, ConnectorState,
+    GapAnalysisState
 )
 
 
@@ -166,6 +167,19 @@ def sidebar() -> rx.Component:
                 ),
                 
                 rx.text("TESTING & ISSUES", font_size="11px", color="#64748b", font_weight="600", padding_left="15px", margin_top="20px"),
+                rx.link(
+                    rx.hstack(
+                        rx.icon("scan-search", size=20),
+                        rx.text("Gap Analysis", font_size="14px", font_weight="500"),
+                        rx.badge("AI", color_scheme="amber", size="1", variant="solid"),
+                        padding="12px 15px",
+                        border_radius="8px",
+                        _hover={"bg": "#1e293b"},
+                        width="100%"
+                    ),
+                    href="/gap-analysis",
+                    style={"text_decoration": "none", "color": "#cbd5e1"}
+                ),
                 rx.link(
                     rx.hstack(
                         rx.icon("clipboard-check", size=20),
@@ -2468,6 +2482,385 @@ def audit_logs() -> rx.Component:
             ),
             
             spacing="6", width="100%"
+        )
+    )
+
+
+# Compliance Gap Analysis Page - AI Powered
+@rx.page(route="/gap-analysis", title="Gap Analysis - GRC Platform", on_load=GapAnalysisState.load_all_data)
+def gap_analysis() -> rx.Component:
+    return layout(
+        rx.vstack(
+            # Header
+            rx.hstack(
+                rx.vstack(
+                    rx.heading("Compliance Gap Analysis", font_size="40px", font_weight="bold", color="#0f172a"),
+                    rx.text("AI-powered assessment of your compliance posture against any framework", font_size="18px", color="#64748b"),
+                    spacing="2",
+                    align_items="start"
+                ),
+                rx.badge("Powered by Gemini AI", color_scheme="amber", size="2", variant="solid"),
+                justify="between",
+                width="100%",
+                align_items="center",
+                margin_bottom="30px"
+            ),
+            
+            # Framework Selection & Run
+            rx.box(
+                rx.hstack(
+                    rx.vstack(
+                        rx.text("Select Framework", font_size="14px", font_weight="600", color="#374151"),
+                        rx.select(
+                            GapAnalysisState.framework_names,
+                            value=GapAnalysisState.selected_framework,
+                            on_change=GapAnalysisState.set_selected_framework,
+                            placeholder="Choose a compliance framework...",
+                            width="350px",
+                        ),
+                        spacing="1",
+                        align_items="start"
+                    ),
+                    rx.button(
+                        rx.cond(
+                            GapAnalysisState.analysis_loading,
+                            rx.hstack(rx.spinner(size="1"), rx.text("Analyzing...", font_size="14px"), spacing="2"),
+                            rx.hstack(rx.icon("sparkles", size=18), rx.text("Run Gap Analysis", font_size="14px"), spacing="2"),
+                        ),
+                        on_click=GapAnalysisState.run_gap_analysis,
+                        bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                        color="white",
+                        size="3",
+                        _hover={"opacity": 0.9},
+                        border_radius="10px",
+                        font_weight="700",
+                        is_disabled=GapAnalysisState.analysis_loading,
+                        cursor="pointer",
+                        padding_x="28px"
+                    ),
+                    spacing="5",
+                    align_items="end"
+                ),
+                bg="white",
+                padding="24px",
+                border_radius="12px",
+                border="1px solid #e2e8f0",
+                margin_bottom="20px"
+            ),
+            
+            # Loading state
+            rx.cond(
+                GapAnalysisState.analysis_loading,
+                rx.center(
+                    rx.vstack(
+                        rx.spinner(size="3"),
+                        rx.text("AI is analyzing your compliance posture...", font_size="16px", color="#64748b"),
+                        rx.text("This may take 15-30 seconds", font_size="13px", color="#94a3b8"),
+                        spacing="3",
+                        align_items="center"
+                    ),
+                    padding="60px",
+                    bg="white",
+                    border_radius="12px",
+                    border="1px solid #e2e8f0"
+                ),
+                rx.fragment()
+            ),
+            
+            # Results
+            rx.cond(
+                GapAnalysisState.analysis_complete,
+                rx.vstack(
+                    # Score Cards Row
+                    rx.grid(
+                        # Overall Score
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Compliance Score", font_size="13px", color="#64748b", font_weight="500"),
+                                rx.text(
+                                    GapAnalysisState.overall_score,
+                                    font_size="52px",
+                                    font_weight="bold",
+                                    color=rx.cond(
+                                        GapAnalysisState.overall_score >= 80,
+                                        "#10b981",
+                                        rx.cond(GapAnalysisState.overall_score >= 60, "#f59e0b", "#ef4444")
+                                    )
+                                ),
+                                rx.text("/ 100", font_size="16px", color="#94a3b8", margin_top="-10px"),
+                                align_items="center",
+                                spacing="1"
+                            ),
+                            bg="white",
+                            padding="24px",
+                            border_radius="12px",
+                            border="1px solid #e2e8f0",
+                            text_align="center"
+                        ),
+                        # Maturity Level
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Maturity Level", font_size="13px", color="#64748b", font_weight="500"),
+                                rx.text(GapAnalysisState.maturity_level, font_size="28px", font_weight="bold", color="#1e40af"),
+                                rx.text(GapAnalysisState.selected_framework, font_size="14px", color="#94a3b8"),
+                                align_items="center",
+                                spacing="1"
+                            ),
+                            bg="white",
+                            padding="24px",
+                            border_radius="12px",
+                            border="1px solid #e2e8f0",
+                            text_align="center"
+                        ),
+                        # Gaps Found
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Gaps Found", font_size="13px", color="#64748b", font_weight="500"),
+                                rx.text(GapAnalysisState.critical_gaps.length(), font_size="52px", font_weight="bold", color="#ef4444"),
+                                rx.text("requiring attention", font_size="14px", color="#94a3b8"),
+                                align_items="center",
+                                spacing="1"
+                            ),
+                            bg="white",
+                            padding="24px",
+                            border_radius="12px",
+                            border="1px solid #e2e8f0",
+                            text_align="center"
+                        ),
+                        # Quick Wins
+                        rx.box(
+                            rx.vstack(
+                                rx.text("Quick Wins", font_size="13px", color="#64748b", font_weight="500"),
+                                rx.text(GapAnalysisState.quick_wins.length(), font_size="52px", font_weight="bold", color="#10b981"),
+                                rx.text("easy improvements", font_size="14px", color="#94a3b8"),
+                                align_items="center",
+                                spacing="1"
+                            ),
+                            bg="white",
+                            padding="24px",
+                            border_radius="12px",
+                            border="1px solid #e2e8f0",
+                            text_align="center"
+                        ),
+                        columns="4",
+                        spacing="4",
+                        width="100%",
+                        margin_bottom="20px"
+                    ),
+                    
+                    # Executive Summary
+                    rx.box(
+                        rx.hstack(
+                            rx.icon("file-text", size=20, color="#3b82f6"),
+                            rx.text("Executive Summary", font_size="18px", font_weight="600", color="#0f172a"),
+                            spacing="2"
+                        ),
+                        rx.text(GapAnalysisState.summary, font_size="15px", color="#374151", margin_top="12px", line_height="1.7"),
+                        bg="white",
+                        padding="24px",
+                        border_radius="12px",
+                        border="1px solid #e2e8f0",
+                        margin_bottom="20px"
+                    ),
+                    
+                    # Two column layout: Strengths + Critical Gaps
+                    rx.grid(
+                        # Strengths
+                        rx.box(
+                            rx.hstack(
+                                rx.icon("check-circle", size=20, color="#10b981"),
+                                rx.text("Strengths", font_size="18px", font_weight="600", color="#065f46"),
+                                spacing="2",
+                                margin_bottom="15px"
+                            ),
+                            rx.foreach(
+                                GapAnalysisState.strengths,
+                                lambda s: rx.box(
+                                    rx.hstack(
+                                        rx.icon("shield-check", size=16, color="#10b981"),
+                                        rx.text(s, font_size="14px", color="#374151"),
+                                        spacing="2",
+                                        align_items="start"
+                                    ),
+                                    padding="12px",
+                                    bg="#f0fdf4",
+                                    border_radius="8px",
+                                    border="1px solid #bbf7d0",
+                                    margin_bottom="8px"
+                                )
+                            ),
+                            bg="white",
+                            padding="24px",
+                            border_radius="12px",
+                            border="1px solid #e2e8f0"
+                        ),
+                        # Critical Gaps
+                        rx.box(
+                            rx.hstack(
+                                rx.icon("alert-triangle", size=20, color="#ef4444"),
+                                rx.text("Critical Gaps", font_size="18px", font_weight="600", color="#991b1b"),
+                                spacing="2",
+                                margin_bottom="15px"
+                            ),
+                            rx.foreach(
+                                GapAnalysisState.critical_gaps,
+                                lambda g, idx: rx.box(
+                                    rx.vstack(
+                                        rx.hstack(
+                                            rx.icon("alert-circle", size=16, color="#ef4444"),
+                                            rx.text(g, font_size="14px", font_weight="500", color="#374151"),
+                                            spacing="2",
+                                            align_items="start"
+                                        ),
+                                        rx.cond(
+                                            idx < GapAnalysisState.gap_recommendations.length(),
+                                            rx.hstack(
+                                                rx.icon("lightbulb", size=14, color="#f59e0b"),
+                                                rx.text(GapAnalysisState.gap_recommendations[idx], font_size="13px", color="#92400e", font_style="italic"),
+                                                spacing="2",
+                                                margin_top="4px",
+                                                align_items="start"
+                                            ),
+                                            rx.fragment()
+                                        ),
+                                        spacing="1"
+                                    ),
+                                    padding="12px",
+                                    bg="#fef2f2",
+                                    border_radius="8px",
+                                    border="1px solid #fecaca",
+                                    margin_bottom="8px"
+                                )
+                            ),
+                            bg="white",
+                            padding="24px",
+                            border_radius="12px",
+                            border="1px solid #e2e8f0"
+                        ),
+                        columns="2",
+                        spacing="4",
+                        width="100%",
+                        margin_bottom="20px"
+                    ),
+                    
+                    # Improvements Table
+                    rx.box(
+                        rx.hstack(
+                            rx.icon("arrow-up-circle", size=20, color="#3b82f6"),
+                            rx.text("Improvement Areas", font_size="18px", font_weight="600", color="#0f172a"),
+                            spacing="2",
+                            margin_bottom="15px"
+                        ),
+                        rx.foreach(
+                            GapAnalysisState.improvements,
+                            lambda imp: rx.box(
+                                rx.hstack(
+                                    rx.icon("arrow-right", size=16, color="#3b82f6"),
+                                    rx.text(imp, font_size="14px", color="#374151"),
+                                    spacing="2",
+                                    align_items="start"
+                                ),
+                                padding="12px",
+                                bg="#eff6ff",
+                                border_radius="8px",
+                                border="1px solid #bfdbfe",
+                                margin_bottom="8px"
+                            )
+                        ),
+                        bg="white",
+                        padding="24px",
+                        border_radius="12px",
+                        border="1px solid #e2e8f0",
+                        margin_bottom="20px"
+                    ),
+                    
+                    # Quick Wins + Roadmap
+                    rx.grid(
+                        # Quick Wins
+                        rx.box(
+                            rx.hstack(
+                                rx.icon("zap", size=20, color="#10b981"),
+                                rx.text("Quick Wins", font_size="18px", font_weight="600", color="#065f46"),
+                                spacing="2",
+                                margin_bottom="15px"
+                            ),
+                            rx.foreach(
+                                GapAnalysisState.quick_wins,
+                                lambda qw, idx: rx.box(
+                                    rx.hstack(
+                                        rx.box(
+                                            rx.text((idx + 1).to(str), font_size="12px", font_weight="bold", color="white"),
+                                            bg="#10b981",
+                                            width="24px",
+                                            height="24px",
+                                            border_radius="50%",
+                                            display="flex",
+                                            align_items="center",
+                                            justify_content="center",
+                                            flex_shrink="0"
+                                        ),
+                                        rx.text(qw, font_size="14px", color="#374151"),
+                                        spacing="3",
+                                        align_items="center"
+                                    ),
+                                    padding="12px",
+                                    bg="white",
+                                    border_radius="8px",
+                                    border="1px solid #d1fae5",
+                                    margin_bottom="8px"
+                                )
+                            ),
+                            bg="#f0fdf4",
+                            padding="24px",
+                            border_radius="12px",
+                            border="1px solid #bbf7d0"
+                        ),
+                        # Roadmap
+                        rx.box(
+                            rx.hstack(
+                                rx.icon("map", size=20, color="#8b5cf6"),
+                                rx.text("Remediation Roadmap", font_size="18px", font_weight="600", color="#5b21b6"),
+                                spacing="2",
+                                margin_bottom="15px"
+                            ),
+                            rx.foreach(
+                                GapAnalysisState.roadmap_phases,
+                                lambda phase, idx: rx.box(
+                                    rx.vstack(
+                                        rx.text(phase, font_size="15px", font_weight="600", color="#5b21b6"),
+                                        rx.cond(
+                                            idx < GapAnalysisState.roadmap_actions.length(),
+                                            rx.text(GapAnalysisState.roadmap_actions[idx], font_size="13px", color="#374151"),
+                                            rx.fragment()
+                                        ),
+                                        spacing="1",
+                                        align_items="start"
+                                    ),
+                                    padding="14px",
+                                    bg="white",
+                                    border_radius="8px",
+                                    border="1px solid #ddd6fe",
+                                    border_left="4px solid #8b5cf6",
+                                    margin_bottom="10px"
+                                )
+                            ),
+                            bg="#f5f3ff",
+                            padding="24px",
+                            border_radius="12px",
+                            border="1px solid #ddd6fe"
+                        ),
+                        columns="2",
+                        spacing="4",
+                        width="100%"
+                    ),
+                    
+                    width="100%"
+                ),
+                rx.fragment()
+            ),
+            
+            spacing="4",
+            width="100%"
         )
     )
 

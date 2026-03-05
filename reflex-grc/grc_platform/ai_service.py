@@ -155,6 +155,111 @@ Return ONLY valid JSON:
                 "Monitor KRI thresholds"
             ]
         }
+    
+    def analyze_compliance_gaps(self, framework_name: str, framework_controls: list, unified_controls: list, policies: list) -> dict:
+        """AI-powered compliance gap analysis for a specific framework"""
+        if not self.model:
+            return self._get_fallback_gap_analysis(framework_name)
+        
+        try:
+            # Build context about current compliance posture
+            mapped_controls = []
+            for uc in unified_controls:
+                for mapping in uc.get("mapped_framework_controls", []):
+                    if mapping.get("framework") == framework_name:
+                        mapped_controls.append({
+                            "ccf_id": uc.get("ccf_id"),
+                            "name": uc.get("name"),
+                            "status": uc.get("status"),
+                            "framework_control_id": mapping.get("control_id"),
+                            "framework_control_name": mapping.get("control_name")
+                        })
+            
+            policy_names = [p.get("name") for p in policies]
+            
+            prompt = f"""You are a senior GRC compliance auditor. Perform a comprehensive compliance gap analysis for the "{framework_name}" framework.
+
+CURRENT STATE:
+- Framework: {framework_name}
+- Mapped unified controls ({len(mapped_controls)} total): {json.dumps(mapped_controls[:15], indent=1)}
+- Active policies: {json.dumps(policy_names, indent=1)}
+
+TASK: Analyze the organization's compliance posture against {framework_name} and identify gaps.
+
+Return ONLY valid JSON with this exact structure:
+{{
+  "overall_score": 72,
+  "maturity_level": "Developing",
+  "summary": "Brief 2-sentence executive summary of compliance posture",
+  "strengths": [
+    {{"area": "Area name", "detail": "What is strong and why"}},
+    {{"area": "Area name", "detail": "What is strong and why"}}
+  ],
+  "critical_gaps": [
+    {{"gap": "Gap title", "severity": "Critical", "detail": "What is missing", "recommendation": "How to fix it"}},
+    {{"gap": "Gap title", "severity": "High", "detail": "What is missing", "recommendation": "How to fix it"}}
+  ],
+  "improvements": [
+    {{"area": "Area name", "current_state": "Current status", "target_state": "Where it should be", "effort": "Low/Medium/High"}}
+  ],
+  "quick_wins": [
+    "Quick actionable item 1",
+    "Quick actionable item 2"
+  ],
+  "roadmap": [
+    {{"phase": "Phase 1 (0-30 days)", "actions": ["action1", "action2"]}},
+    {{"phase": "Phase 2 (30-90 days)", "actions": ["action1", "action2"]}},
+    {{"phase": "Phase 3 (90-180 days)", "actions": ["action1", "action2"]}}
+  ]
+}}
+
+Ensure overall_score is 0-100. Be specific and actionable. Return ONLY the JSON."""
+
+            response = self.model.generate_content(prompt)
+            text = response.text.strip()
+            
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            
+            result = json.loads(text)
+            return result
+            
+        except Exception as e:
+            print(f"Gemini gap analysis error: {e}")
+            return self._get_fallback_gap_analysis(framework_name)
+    
+    def _get_fallback_gap_analysis(self, framework_name: str) -> dict:
+        """Fallback gap analysis when AI is unavailable"""
+        return {
+            "overall_score": 65,
+            "maturity_level": "Developing",
+            "summary": f"Preliminary gap analysis for {framework_name}. Configure Gemini API key for AI-powered deep analysis.",
+            "strengths": [
+                {"area": "Access Control", "detail": "Basic access control policies are in place"},
+                {"area": "Incident Response", "detail": "Incident response procedures documented"}
+            ],
+            "critical_gaps": [
+                {"gap": "Risk Assessment Process", "severity": "Critical", "detail": "No formal risk assessment methodology", "recommendation": "Implement a structured risk assessment framework"},
+                {"gap": "Third-Party Management", "severity": "High", "detail": "Vendor risk management is informal", "recommendation": "Establish vendor risk assessment program"},
+                {"gap": "Business Continuity", "severity": "High", "detail": "BCP/DR plans not tested recently", "recommendation": "Schedule quarterly BCP/DR testing"}
+            ],
+            "improvements": [
+                {"area": "Security Awareness", "current_state": "Annual training only", "target_state": "Continuous awareness program", "effort": "Medium"},
+                {"area": "Monitoring", "current_state": "Basic log collection", "target_state": "SIEM with real-time alerting", "effort": "High"}
+            ],
+            "quick_wins": [
+                "Update all policy documents to current year",
+                "Enable MFA for all administrative accounts",
+                "Document data classification scheme"
+            ],
+            "roadmap": [
+                {"phase": "Phase 1 (0-30 days)", "actions": ["Complete policy review", "Enable MFA everywhere"]},
+                {"phase": "Phase 2 (30-90 days)", "actions": ["Implement vendor risk program", "Deploy SIEM solution"]},
+                {"phase": "Phase 3 (90-180 days)", "actions": ["Conduct full risk assessment", "Achieve certification readiness"]}
+            ]
+        }
 
 # Global AI service instance
 ai_service = GeminiAIService()

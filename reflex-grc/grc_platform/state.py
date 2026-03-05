@@ -252,6 +252,7 @@ class RiskState(GRCState):
         """Get AI-powered risk suggestions"""
         self.ai_loading = True
         self.show_ai_suggestions = True
+        yield  # Send loading state to frontend
         try:
             from .ai_service import ai_service
             suggestions = ai_service.get_risk_suggestions(self.ai_industry)
@@ -827,3 +828,106 @@ class ConnectorState(GRCState):
         db_service.update_connector_status(connector_id, new_status)
         self.load_all_data()
         return rx.toast.success(f"Connector {'connected' if new_status == 'Connected' else 'disconnected'}")
+
+
+
+class GapAnalysisState(GRCState):
+    """State for AI-powered compliance gap analysis"""
+    
+    selected_framework: str = ""
+    analysis_loading: bool = False
+    analysis_complete: bool = False
+    
+    # Results (flat types for Reflex compatibility)
+    overall_score: int = 0
+    maturity_level: str = ""
+    summary: str = ""
+    strengths: list[str] = []
+    critical_gaps: list[str] = []
+    gap_severities: list[str] = []
+    gap_recommendations: list[str] = []
+    improvements: list[str] = []
+    quick_wins: list[str] = []
+    roadmap_phases: list[str] = []
+    roadmap_actions: list[str] = []
+    
+    def set_selected_framework(self, value: str):
+        self.selected_framework = value
+    
+    @rx.var
+    def framework_names(self) -> list[str]:
+        """Return list of framework names for the dropdown"""
+        return [fw.get("name", "") for fw in self.frameworks if fw.get("enabled", True)]
+    
+    def run_gap_analysis(self):
+        """Run AI-powered compliance gap analysis"""
+        if not self.selected_framework:
+            return rx.toast.error("Please select a framework first")
+        
+        self.analysis_loading = True
+        self.analysis_complete = False
+        yield  # Send loading state to frontend
+        
+        try:
+            from .ai_service import ai_service
+            
+            # Find framework controls
+            fw_data = None
+            for fw in self.frameworks:
+                if fw.get("name") == self.selected_framework:
+                    fw_data = fw
+                    break
+            
+            fw_controls = fw_data.get("controls", []) if fw_data else []
+            
+            result = ai_service.analyze_compliance_gaps(
+                self.selected_framework,
+                fw_controls,
+                self.unified_controls,
+                self.policies
+            )
+            
+            # Parse results into flat types
+            self.overall_score = int(result.get("overall_score", 0))
+            self.maturity_level = result.get("maturity_level", "Unknown")
+            self.summary = result.get("summary", "")
+            
+            # Strengths: "Area: Detail"
+            self.strengths = [
+                f"{s.get('area', '')}: {s.get('detail', '')}" 
+                for s in result.get("strengths", [])
+            ]
+            
+            # Critical gaps: separate lists for display
+            gaps = result.get("critical_gaps", [])
+            self.critical_gaps = [
+                f"{g.get('gap', '')}: {g.get('detail', '')}" 
+                for g in gaps
+            ]
+            self.gap_severities = [g.get("severity", "Medium") for g in gaps]
+            self.gap_recommendations = [g.get("recommendation", "") for g in gaps]
+            
+            # Improvements: "Area | Current -> Target (Effort)"
+            self.improvements = [
+                f"{i.get('area', '')} | {i.get('current_state', '')} -> {i.get('target_state', '')} ({i.get('effort', '')} effort)"
+                for i in result.get("improvements", [])
+            ]
+            
+            # Quick wins
+            self.quick_wins = result.get("quick_wins", [])
+            
+            # Roadmap
+            roadmap = result.get("roadmap", [])
+            self.roadmap_phases = [r.get("phase", "") for r in roadmap]
+            self.roadmap_actions = [" | ".join(r.get("actions", [])) for r in roadmap]
+            
+            self.analysis_complete = True
+            
+        except Exception as e:
+            print(f"[ERROR] Gap analysis failed: {e}")
+            import traceback
+            traceback.print_exc()
+            self.analysis_complete = False
+            yield rx.toast.error("Gap analysis failed. Please try again.")
+        
+        self.analysis_loading = False
