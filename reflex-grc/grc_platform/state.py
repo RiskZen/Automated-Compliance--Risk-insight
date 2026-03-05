@@ -931,3 +931,266 @@ class GapAnalysisState(GRCState):
             yield rx.toast.error("Gap analysis failed. Please try again.")
         
         self.analysis_loading = False
+
+
+class AuditManagementState(GRCState):
+    """State for Internal Audit Management"""
+    
+    # Data
+    audits: list[dict[str, Any]] = []
+    audit_findings: list[dict[str, Any]] = []
+    
+    # Form state
+    show_audit_form: bool = False
+    new_audit_name: str = ""
+    new_audit_framework: str = ""
+    new_audit_auditor: str = ""
+    new_audit_start: str = ""
+    new_audit_end: str = ""
+    new_audit_scope: str = ""
+    
+    # Finding form
+    show_finding_form: bool = False
+    selected_audit_id: str = ""
+    new_finding_control: str = ""
+    new_finding_desc: str = ""
+    new_finding_severity: str = "Medium"
+    new_finding_remediation: str = ""
+    new_finding_assigned: str = ""
+    new_finding_due: str = ""
+    
+    # Readiness view
+    selected_readiness_fw: str = ""
+    
+    def load_audit_data(self):
+        """Load all audit-related data"""
+        self.load_all_data()
+        self.audits = db_service.get_audits()
+        self.audit_findings = db_service.get_audit_findings()
+    
+    # Setters
+    def set_new_audit_name(self, v: str): self.new_audit_name = v
+    def set_new_audit_framework(self, v: str): self.new_audit_framework = v
+    def set_new_audit_auditor(self, v: str): self.new_audit_auditor = v
+    def set_new_audit_start(self, v: str): self.new_audit_start = v
+    def set_new_audit_end(self, v: str): self.new_audit_end = v
+    def set_new_audit_scope(self, v: str): self.new_audit_scope = v
+    def set_new_finding_control(self, v: str): self.new_finding_control = v
+    def set_new_finding_desc(self, v: str): self.new_finding_desc = v
+    def set_new_finding_severity(self, v: str): self.new_finding_severity = v
+    def set_new_finding_remediation(self, v: str): self.new_finding_remediation = v
+    def set_new_finding_assigned(self, v: str): self.new_finding_assigned = v
+    def set_new_finding_due(self, v: str): self.new_finding_due = v
+    def set_selected_readiness_fw(self, v: str): self.selected_readiness_fw = v
+    
+    def toggle_audit_form(self):
+        self.show_audit_form = not self.show_audit_form
+    
+    def toggle_finding_form(self, audit_id: str = ""):
+        self.selected_audit_id = audit_id
+        self.show_finding_form = not self.show_finding_form
+    
+    @rx.var
+    def framework_options(self) -> list[str]:
+        return [fw.get("name", "") for fw in self.frameworks if fw.get("enabled", True)]
+    
+    @rx.var
+    def control_options(self) -> list[str]:
+        return [f"{c.get('ccf_id', '')}: {c.get('name', '')}" for c in self.unified_controls]
+    
+    @rx.var
+    def tested_ccf_ids(self) -> list[str]:
+        """CCF IDs with passing control tests — no re-audit needed"""
+        passed = set()
+        for t in self.control_tests:
+            if t.get("result") == "Pass":
+                passed.add(t.get("control_ccf_id", ""))
+        return list(passed)
+    
+    @rx.var
+    def readiness_controls(self) -> list[str]:
+        """For the selected framework, return list of formatted control readiness strings"""
+        if not self.selected_readiness_fw:
+            return []
+        
+        tested = set()
+        for t in self.control_tests:
+            if t.get("result") == "Pass":
+                tested.add(t.get("control_ccf_id", ""))
+        
+        audited_ccfs = set()
+        for a in self.audits:
+            if a.get("framework") == self.selected_readiness_fw and a.get("status") in ["Completed", "In Progress"]:
+                # Find findings for this audit to know which controls were audited
+                for f in self.audit_findings:
+                    if f.get("audit_id") == a.get("id"):
+                        ctrl_id = f.get("control_ccf_id", "")
+                        if ctrl_id:
+                            audited_ccfs.add(ctrl_id)
+        
+        results = []
+        for ctrl in self.unified_controls:
+            ccf_id = ctrl.get("ccf_id", "")
+            name = ctrl.get("name", "")
+            # Check if this control maps to the selected framework
+            mapped = False
+            for m in ctrl.get("mapped_framework_controls", []):
+                if m.get("framework") == self.selected_readiness_fw:
+                    mapped = True
+                    break
+            if not mapped:
+                continue
+            
+            if ccf_id in tested:
+                status = "COVERED (CCF Tested - Pass)"
+            elif ccf_id in audited_ccfs:
+                status = "AUDITED"
+            else:
+                status = "NEEDS AUDIT"
+            
+            results.append(f"{ccf_id} | {name} | {status}")
+        
+        return results
+    
+    @rx.var
+    def readiness_summary(self) -> str:
+        """Summary stats for the selected framework readiness"""
+        if not self.selected_readiness_fw:
+            return ""
+        controls = self.readiness_controls
+        total = len(controls)
+        if total == 0:
+            return "No controls mapped to this framework"
+        covered = sum(1 for c in controls if "COVERED" in c)
+        audited = sum(1 for c in controls if "AUDITED" in c)
+        needs = sum(1 for c in controls if "NEEDS AUDIT" in c)
+        pct = round(((covered + audited) / total) * 100) if total > 0 else 0
+        return f"{pct}% ready | {covered} covered by CCF testing | {audited} audited | {needs} need audit | {total} total"
+    
+    @rx.var
+    def audit_stats(self) -> dict[str, int]:
+        total = len(self.audits)
+        planned = sum(1 for a in self.audits if a.get("status") == "Planned")
+        in_progress = sum(1 for a in self.audits if a.get("status") == "In Progress")
+        completed = sum(1 for a in self.audits if a.get("status") == "Completed")
+        open_findings = sum(1 for f in self.audit_findings if f.get("status") in ["Open", "In Remediation"])
+        return {"total": total, "planned": planned, "in_progress": in_progress, "completed": completed, "open_findings": open_findings}
+    
+    @rx.var
+    def selected_audit_findings(self) -> list[str]:
+        """Findings for the selected audit as formatted strings"""
+        if not self.selected_audit_id:
+            return []
+        results = []
+        for f in self.audit_findings:
+            if f.get("audit_id") == self.selected_audit_id:
+                sev = f.get("severity", "Medium")
+                status = f.get("status", "Open")
+                ctrl = f.get("control_ccf_id", "N/A")
+                desc = f.get("description", "")
+                remediation = f.get("remediation", "")
+                assigned = f.get("assigned_to", "Unassigned")
+                results.append(f"{sev} | {ctrl} | {desc} | Remediation: {remediation} | Assigned: {assigned} | Status: {status}")
+        return results
+    
+    def create_audit(self):
+        """Create a new audit plan"""
+        if not self.new_audit_name or not self.new_audit_framework:
+            return rx.toast.error("Please fill in audit name and framework")
+        
+        # Determine which controls need audit (not already tested via CCF)
+        tested = set()
+        for t in self.control_tests:
+            if t.get("result") == "Pass":
+                tested.add(t.get("control_ccf_id", ""))
+        
+        scope_controls = []
+        for ctrl in self.unified_controls:
+            ccf_id = ctrl.get("ccf_id", "")
+            for m in ctrl.get("mapped_framework_controls", []):
+                if m.get("framework") == self.new_audit_framework:
+                    if ccf_id not in tested:
+                        scope_controls.append(ccf_id)
+                    break
+        
+        audit = {
+            "id": str(uuid.uuid4()),
+            "name": self.new_audit_name,
+            "framework": self.new_audit_framework,
+            "status": "Planned",
+            "auditor": self.new_audit_auditor or "Unassigned",
+            "start_date": self.new_audit_start or "TBD",
+            "end_date": self.new_audit_end or "TBD",
+            "scope": self.new_audit_scope or f"Audit of {self.new_audit_framework} controls",
+            "scope_controls": scope_controls,
+            "skipped_controls": list(tested),
+            "findings_count": 0,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        db_service.create_audit(audit)
+        
+        # Reset form
+        self.new_audit_name = ""
+        self.new_audit_framework = ""
+        self.new_audit_auditor = ""
+        self.new_audit_start = ""
+        self.new_audit_end = ""
+        self.new_audit_scope = ""
+        self.show_audit_form = False
+        
+        self.load_audit_data()
+        skipped = len(tested)
+        return rx.toast.success(f"Audit created! {skipped} controls auto-skipped (already CCF tested)")
+    
+    def update_audit_status(self, audit_id: str, new_status: str):
+        """Update audit status"""
+        db_service.update_audit(audit_id, {"status": new_status})
+        self.load_audit_data()
+        return rx.toast.success(f"Audit status updated to {new_status}")
+    
+    def create_finding(self):
+        """Create a new audit finding"""
+        if not self.new_finding_desc:
+            return rx.toast.error("Please enter finding description")
+        
+        ctrl_ccf = ""
+        if self.new_finding_control and ":" in self.new_finding_control:
+            ctrl_ccf = self.new_finding_control.split(":")[0].strip()
+        
+        finding = {
+            "id": str(uuid.uuid4()),
+            "audit_id": self.selected_audit_id,
+            "control_ccf_id": ctrl_ccf,
+            "description": self.new_finding_desc,
+            "severity": self.new_finding_severity,
+            "status": "Open",
+            "remediation": self.new_finding_remediation,
+            "assigned_to": self.new_finding_assigned or "Unassigned",
+            "due_date": self.new_finding_due or "TBD",
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        db_service.create_audit_finding(finding)
+        
+        # Update audit findings count
+        findings = db_service.get_audit_findings(self.selected_audit_id)
+        db_service.update_audit(self.selected_audit_id, {"findings_count": len(findings)})
+        
+        # Reset
+        self.new_finding_control = ""
+        self.new_finding_desc = ""
+        self.new_finding_severity = "Medium"
+        self.new_finding_remediation = ""
+        self.new_finding_assigned = ""
+        self.new_finding_due = ""
+        self.show_finding_form = False
+        
+        self.load_audit_data()
+        return rx.toast.success("Finding added")
+    
+    def resolve_finding(self, finding_id: str):
+        """Mark a finding as resolved"""
+        db_service.update_audit_finding(finding_id, {"status": "Resolved"})
+        self.load_audit_data()
+        return rx.toast.success("Finding resolved")

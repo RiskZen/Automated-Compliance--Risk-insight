@@ -215,6 +215,36 @@ class DatabaseService:
             "production_ai_models": len(production_models),
             "high_risk_ai_models": len(high_risk_models)
         }
+    
+    # ── Audit Management ──
+    
+    def get_audits(self) -> list:
+        return list(self.db.audits.find({}, {"_id": 0}))
+    
+    def create_audit(self, audit: dict):
+        self.db.audits.insert_one(audit)
+    
+    def update_audit(self, audit_id: str, updates: dict):
+        self.db.audits.update_one({"id": audit_id}, {"$set": updates})
+    
+    def delete_audit(self, audit_id: str):
+        self.db.audits.delete_one({"id": audit_id})
+        self.db.audit_findings.delete_many({"audit_id": audit_id})
+    
+    def get_audit_findings(self, audit_id: str = None) -> list:
+        query = {"audit_id": audit_id} if audit_id else {}
+        return list(self.db.audit_findings.find(query, {"_id": 0}))
+    
+    def create_audit_finding(self, finding: dict):
+        self.db.audit_findings.insert_one(finding)
+    
+    def update_audit_finding(self, finding_id: str, updates: dict):
+        self.db.audit_findings.update_one({"id": finding_id}, {"$set": updates})
+    
+    def get_tested_ccf_ids(self) -> set:
+        """Get CCF IDs that have passed control testing"""
+        tests = self.get_control_tests()
+        return {t.get("control_ccf_id") for t in tests if t.get("result") == "Pass"}
 
 
 # Global database instance

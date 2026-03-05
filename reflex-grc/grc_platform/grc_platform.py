@@ -5,7 +5,7 @@ from .state import (
     GRCState, FrameworkState, ControlState, PolicyState, RiskState,
     TestingState, IssueState, KRIState, KCIState, HeatmapState,
     AuthState, AIGovernanceState, AuditLogState, ConnectorState,
-    GapAnalysisState
+    GapAnalysisState, AuditManagementState
 )
 
 
@@ -206,6 +206,30 @@ def sidebar() -> rx.Component:
                 ),
                 
                 rx.text("RISK MANAGEMENT", font_size="11px", color="#64748b", font_weight="600", padding_left="15px", margin_top="20px"),
+                rx.link(
+                    rx.hstack(
+                        rx.icon("clipboard-list", size=20),
+                        rx.text("Audit Planning", font_size="14px", font_weight="500"),
+                        padding="12px 15px",
+                        border_radius="8px",
+                        _hover={"bg": "#1e293b"},
+                        width="100%"
+                    ),
+                    href="/audit-planning",
+                    style={"text_decoration": "none", "color": "#cbd5e1"}
+                ),
+                rx.link(
+                    rx.hstack(
+                        rx.icon("shield-check", size=20),
+                        rx.text("Audit Readiness", font_size="14px", font_weight="500"),
+                        padding="12px 15px",
+                        border_radius="8px",
+                        _hover={"bg": "#1e293b"},
+                        width="100%"
+                    ),
+                    href="/audit-readiness",
+                    style={"text_decoration": "none", "color": "#cbd5e1"}
+                ),
                 rx.link(
                     rx.hstack(
                         rx.icon("trending-up", size=20),
@@ -2861,6 +2885,352 @@ def gap_analysis() -> rx.Component:
             
             spacing="4",
             width="100%"
+        )
+    )
+
+
+# Audit Planning Page
+@rx.page(route="/audit-planning", title="Audit Planning - GRC Platform", on_load=AuditManagementState.load_audit_data)
+def audit_planning() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("Internal Audit Management", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Plan audits, track findings, and manage remediation", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            # Stats Row
+            rx.grid(
+                rx.box(
+                    rx.vstack(
+                        rx.text("Total Audits", font_size="13px", color="#64748b"),
+                        rx.text(AuditManagementState.audit_stats["total"], font_size="36px", font_weight="bold", color="#0f172a"),
+                        align_items="center", spacing="1"
+                    ),
+                    bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0", text_align="center"
+                ),
+                rx.box(
+                    rx.vstack(
+                        rx.text("Planned", font_size="13px", color="#64748b"),
+                        rx.text(AuditManagementState.audit_stats["planned"], font_size="36px", font_weight="bold", color="#3b82f6"),
+                        align_items="center", spacing="1"
+                    ),
+                    bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0", text_align="center"
+                ),
+                rx.box(
+                    rx.vstack(
+                        rx.text("In Progress", font_size="13px", color="#64748b"),
+                        rx.text(AuditManagementState.audit_stats["in_progress"], font_size="36px", font_weight="bold", color="#f59e0b"),
+                        align_items="center", spacing="1"
+                    ),
+                    bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0", text_align="center"
+                ),
+                rx.box(
+                    rx.vstack(
+                        rx.text("Completed", font_size="13px", color="#64748b"),
+                        rx.text(AuditManagementState.audit_stats["completed"], font_size="36px", font_weight="bold", color="#10b981"),
+                        align_items="center", spacing="1"
+                    ),
+                    bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0", text_align="center"
+                ),
+                rx.box(
+                    rx.vstack(
+                        rx.text("Open Findings", font_size="13px", color="#64748b"),
+                        rx.text(AuditManagementState.audit_stats["open_findings"], font_size="36px", font_weight="bold", color="#ef4444"),
+                        align_items="center", spacing="1"
+                    ),
+                    bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0", text_align="center"
+                ),
+                columns="5", spacing="4", width="100%", margin_bottom="20px"
+            ),
+            
+            # Create Audit Button + Form
+            rx.box(
+                rx.hstack(
+                    rx.heading("Audit Plans", font_size="24px", font_weight="600"),
+                    rx.button(
+                        rx.icon("plus", size=18), " New Audit Plan",
+                        on_click=AuditManagementState.toggle_audit_form,
+                        bg="#3b82f6", color="white", cursor="pointer"
+                    ),
+                    justify="between", width="100%", margin_bottom="20px"
+                ),
+                
+                # New Audit Form
+                rx.cond(
+                    AuditManagementState.show_audit_form,
+                    rx.box(
+                        rx.vstack(
+                            rx.text("Create New Audit Plan", font_size="18px", font_weight="600", color="#0f172a"),
+                            rx.grid(
+                                rx.vstack(
+                                    rx.text("Audit Name *", font_size="13px", color="#64748b"),
+                                    rx.input(placeholder="e.g., ISO 27001 Annual Audit 2026", value=AuditManagementState.new_audit_name, on_change=AuditManagementState.set_new_audit_name, width="100%"),
+                                    spacing="1"
+                                ),
+                                rx.vstack(
+                                    rx.text("Framework *", font_size="13px", color="#64748b"),
+                                    rx.select(AuditManagementState.framework_options, value=AuditManagementState.new_audit_framework, on_change=AuditManagementState.set_new_audit_framework, placeholder="Select framework...", width="100%"),
+                                    spacing="1"
+                                ),
+                                columns="2", spacing="4", width="100%"
+                            ),
+                            rx.grid(
+                                rx.vstack(
+                                    rx.text("Lead Auditor", font_size="13px", color="#64748b"),
+                                    rx.input(placeholder="Auditor name", value=AuditManagementState.new_audit_auditor, on_change=AuditManagementState.set_new_audit_auditor, width="100%"),
+                                    spacing="1"
+                                ),
+                                rx.vstack(
+                                    rx.text("Start Date", font_size="13px", color="#64748b"),
+                                    rx.input(placeholder="YYYY-MM-DD", value=AuditManagementState.new_audit_start, on_change=AuditManagementState.set_new_audit_start, width="100%"),
+                                    spacing="1"
+                                ),
+                                rx.vstack(
+                                    rx.text("End Date", font_size="13px", color="#64748b"),
+                                    rx.input(placeholder="YYYY-MM-DD", value=AuditManagementState.new_audit_end, on_change=AuditManagementState.set_new_audit_end, width="100%"),
+                                    spacing="1"
+                                ),
+                                columns="3", spacing="4", width="100%"
+                            ),
+                            rx.vstack(
+                                rx.text("Scope", font_size="13px", color="#64748b"),
+                                rx.text_area(placeholder="Describe the audit scope...", value=AuditManagementState.new_audit_scope, on_change=AuditManagementState.set_new_audit_scope, width="100%"),
+                                spacing="1"
+                            ),
+                            rx.callout(
+                                "Controls already tested via CCF (with passing results) will be automatically excluded from the audit scope.",
+                                icon="info",
+                                color_scheme="blue",
+                                size="1"
+                            ),
+                            rx.hstack(
+                                rx.button("Create Audit Plan", on_click=AuditManagementState.create_audit, bg="#3b82f6", color="white", cursor="pointer"),
+                                rx.button("Cancel", on_click=AuditManagementState.toggle_audit_form, variant="outline", cursor="pointer"),
+                                spacing="3"
+                            ),
+                            spacing="4", width="100%"
+                        ),
+                        bg="#f8fafc", padding="24px", border_radius="12px", border="1px dashed #3b82f6", margin_bottom="20px"
+                    ),
+                    rx.fragment()
+                ),
+                
+                # Audit List
+                rx.cond(
+                    AuditManagementState.audits.length() > 0,
+                    rx.vstack(
+                        rx.foreach(
+                            AuditManagementState.audits,
+                            lambda audit: rx.box(
+                                rx.vstack(
+                                    rx.hstack(
+                                        rx.vstack(
+                                            rx.hstack(
+                                                rx.text(audit["name"], font_size="18px", font_weight="600", color="#0f172a"),
+                                                rx.badge(audit["status"], color_scheme=rx.cond(audit["status"] == "Completed", "green", rx.cond(audit["status"] == "In Progress", "yellow", "blue"))),
+                                                rx.badge(audit["framework"], color_scheme="purple", size="1"),
+                                                spacing="3"
+                                            ),
+                                            rx.hstack(
+                                                rx.text("Auditor: " + audit["auditor"].to_string(), font_size="13px", color="#64748b"),
+                                                rx.text("Period: " + audit["start_date"].to_string() + " - " + audit["end_date"].to_string(), font_size="13px", color="#64748b"),
+                                                rx.text("Findings: " + audit["findings_count"].to_string(), font_size="13px", color="#64748b"),
+                                                spacing="4"
+                                            ),
+                                            rx.text(audit["scope"], font_size="14px", color="#475569", margin_top="4px"),
+                                            align_items="start", flex="1"
+                                        ),
+                                        rx.vstack(
+                                            rx.hstack(
+                                                rx.button("Start", on_click=AuditManagementState.update_audit_status(audit["id"], "In Progress"), size="1", variant="outline", color_scheme="yellow", cursor="pointer"),
+                                                rx.button("Complete", on_click=AuditManagementState.update_audit_status(audit["id"], "Completed"), size="1", variant="outline", color_scheme="green", cursor="pointer"),
+                                                spacing="2"
+                                            ),
+                                            rx.button(
+                                                rx.hstack(rx.icon("plus", size=14), rx.text("Add Finding", font_size="12px"), spacing="1"),
+                                                on_click=AuditManagementState.toggle_finding_form(audit["id"]),
+                                                size="1", variant="outline", color_scheme="red", cursor="pointer"
+                                            ),
+                                            spacing="2", align_items="end"
+                                        ),
+                                        width="100%", align_items="start"
+                                    ),
+                                    
+                                    # Findings for this audit (show if selected)
+                                    rx.cond(
+                                        AuditManagementState.selected_audit_id == audit["id"],
+                                        rx.cond(
+                                            AuditManagementState.show_finding_form,
+                                            rx.box(
+                                                rx.vstack(
+                                                    rx.text("Add Finding", font_size="16px", font_weight="600"),
+                                                    rx.grid(
+                                                        rx.vstack(
+                                                            rx.text("Related Control", font_size="13px", color="#64748b"),
+                                                            rx.select(AuditManagementState.control_options, value=AuditManagementState.new_finding_control, on_change=AuditManagementState.set_new_finding_control, placeholder="Select control...", width="100%"),
+                                                            spacing="1"
+                                                        ),
+                                                        rx.vstack(
+                                                            rx.text("Severity", font_size="13px", color="#64748b"),
+                                                            rx.select(["Critical", "High", "Medium", "Low"], value=AuditManagementState.new_finding_severity, on_change=AuditManagementState.set_new_finding_severity, width="100%"),
+                                                            spacing="1"
+                                                        ),
+                                                        columns="2", spacing="4", width="100%"
+                                                    ),
+                                                    rx.text_area(placeholder="Finding description...", value=AuditManagementState.new_finding_desc, on_change=AuditManagementState.set_new_finding_desc, width="100%"),
+                                                    rx.text_area(placeholder="Recommended remediation...", value=AuditManagementState.new_finding_remediation, on_change=AuditManagementState.set_new_finding_remediation, width="100%"),
+                                                    rx.grid(
+                                                        rx.input(placeholder="Assigned to", value=AuditManagementState.new_finding_assigned, on_change=AuditManagementState.set_new_finding_assigned, width="100%"),
+                                                        rx.input(placeholder="Due date (YYYY-MM-DD)", value=AuditManagementState.new_finding_due, on_change=AuditManagementState.set_new_finding_due, width="100%"),
+                                                        columns="2", spacing="4", width="100%"
+                                                    ),
+                                                    rx.hstack(
+                                                        rx.button("Save Finding", on_click=AuditManagementState.create_finding, bg="#ef4444", color="white", cursor="pointer"),
+                                                        rx.button("Cancel", on_click=AuditManagementState.toggle_finding_form(""), variant="outline", cursor="pointer"),
+                                                        spacing="3"
+                                                    ),
+                                                    spacing="3", width="100%"
+                                                ),
+                                                bg="#fef2f2", padding="16px", border_radius="8px", margin_top="12px", border="1px dashed #fca5a5"
+                                            ),
+                                            rx.fragment()
+                                        ),
+                                        rx.fragment()
+                                    ),
+                                    
+                                    width="100%"
+                                ),
+                                bg="white", padding="20px", border_radius="12px", border="1px solid #e2e8f0", margin_bottom="12px",
+                                _hover={"border_color": "#3b82f6"}
+                            )
+                        ),
+                        width="100%"
+                    ),
+                    rx.center(
+                        rx.vstack(
+                            rx.icon("clipboard-list", size=48, color="#94a3b8"),
+                            rx.text("No audits planned yet", font_size="16px", color="#64748b"),
+                            rx.text("Click 'New Audit Plan' to get started", font_size="14px", color="#94a3b8"),
+                            align_items="center", spacing="2"
+                        ),
+                        padding="60px"
+                    )
+                ),
+                
+                bg="white", padding="30px", border_radius="12px", border="1px solid #e2e8f0"
+            ),
+            
+            spacing="6", width="100%"
+        )
+    )
+
+
+# Audit Readiness Page
+@rx.page(route="/audit-readiness", title="Audit Readiness - GRC Platform", on_load=AuditManagementState.load_audit_data)
+def audit_readiness() -> rx.Component:
+    return layout(
+        rx.vstack(
+            rx.heading("Audit Readiness", font_size="40px", font_weight="bold", color="#0f172a", margin_bottom="10px"),
+            rx.text("Check your readiness for framework audits — controls tested via CCF are auto-covered", font_size="18px", color="#64748b", margin_bottom="30px"),
+            
+            # Framework Selector
+            rx.box(
+                rx.hstack(
+                    rx.vstack(
+                        rx.text("Select Framework", font_size="14px", font_weight="600", color="#374151"),
+                        rx.select(
+                            AuditManagementState.framework_options,
+                            value=AuditManagementState.selected_readiness_fw,
+                            on_change=AuditManagementState.set_selected_readiness_fw,
+                            placeholder="Choose a framework to check readiness...",
+                            width="400px"
+                        ),
+                        spacing="1", align_items="start"
+                    ),
+                    spacing="4", align_items="end"
+                ),
+                bg="white", padding="24px", border_radius="12px", border="1px solid #e2e8f0", margin_bottom="20px"
+            ),
+            
+            # Readiness Summary
+            rx.cond(
+                AuditManagementState.selected_readiness_fw != "",
+                rx.vstack(
+                    # Summary bar
+                    rx.box(
+                        rx.hstack(
+                            rx.icon("shield-check", size=22, color="#10b981"),
+                            rx.text("Readiness Summary: ", font_size="16px", font_weight="600", color="#0f172a"),
+                            rx.text(AuditManagementState.readiness_summary, font_size="15px", color="#374151"),
+                            spacing="2", align_items="center"
+                        ),
+                        bg="#f0fdf4", padding="16px", border_radius="10px", border="1px solid #bbf7d0", margin_bottom="20px", width="100%"
+                    ),
+                    
+                    # Legend
+                    rx.hstack(
+                        rx.hstack(rx.box(width="14px", height="14px", bg="#10b981", border_radius="3px"), rx.text("Covered by CCF Testing", font_size="13px", color="#374151"), spacing="2"),
+                        rx.hstack(rx.box(width="14px", height="14px", bg="#3b82f6", border_radius="3px"), rx.text("Audited", font_size="13px", color="#374151"), spacing="2"),
+                        rx.hstack(rx.box(width="14px", height="14px", bg="#ef4444", border_radius="3px"), rx.text("Needs Audit", font_size="13px", color="#374151"), spacing="2"),
+                        spacing="6", margin_bottom="15px"
+                    ),
+                    
+                    # Controls List
+                    rx.box(
+                        rx.foreach(
+                            AuditManagementState.readiness_controls,
+                            lambda ctrl_str: rx.box(
+                                rx.hstack(
+                                    rx.cond(
+                                        ctrl_str.contains("COVERED"),
+                                        rx.icon("check-circle", size=18, color="#10b981"),
+                                        rx.cond(
+                                            ctrl_str.contains("AUDITED"),
+                                            rx.icon("check-circle", size=18, color="#3b82f6"),
+                                            rx.icon("alert-circle", size=18, color="#ef4444")
+                                        )
+                                    ),
+                                    rx.text(ctrl_str, font_size="14px", color="#374151"),
+                                    spacing="3", align_items="center"
+                                ),
+                                padding="12px 16px",
+                                bg=rx.cond(
+                                    ctrl_str.contains("COVERED"),
+                                    "#f0fdf4",
+                                    rx.cond(
+                                        ctrl_str.contains("AUDITED"),
+                                        "#eff6ff",
+                                        "#fef2f2"
+                                    )
+                                ),
+                                border_radius="8px",
+                                border=rx.cond(
+                                    ctrl_str.contains("COVERED"),
+                                    "1px solid #bbf7d0",
+                                    rx.cond(
+                                        ctrl_str.contains("AUDITED"),
+                                        "1px solid #bfdbfe",
+                                        "1px solid #fecaca"
+                                    )
+                                ),
+                                margin_bottom="8px"
+                            )
+                        ),
+                        bg="white", padding="24px", border_radius="12px", border="1px solid #e2e8f0"
+                    ),
+                    
+                    width="100%"
+                ),
+                rx.center(
+                    rx.vstack(
+                        rx.icon("shield", size=48, color="#94a3b8"),
+                        rx.text("Select a framework to check audit readiness", font_size="16px", color="#64748b"),
+                        align_items="center", spacing="2"
+                    ),
+                    padding="60px", bg="white", border_radius="12px", border="1px solid #e2e8f0"
+                )
+            ),
+            
+            spacing="6", width="100%"
         )
     )
 
