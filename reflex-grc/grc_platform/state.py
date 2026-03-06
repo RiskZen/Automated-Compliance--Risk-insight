@@ -59,6 +59,10 @@ class AuthState(rx.State):
 class GRCState(AuthState):
     """Global state for the entire GRC application"""
     
+    # Department / Workspace
+    departments: list[dict[str, Any]] = []
+    current_department: str = "All Departments"
+    
     # Data - using list[dict[str, Any]] for proper typing
     frameworks: list[dict[str, Any]] = []
     unified_controls: list[dict[str, Any]] = []
@@ -91,40 +95,77 @@ class GRCState(AuthState):
     production_ai_models: int = 0
     high_risk_ai_models: int = 0
     
+    @rx.var
+    def department_names(self) -> list[str]:
+        names = ["All Departments"]
+        for d in self.departments:
+            names.append(d.get("name", ""))
+        return names
+    
+    @rx.var
+    def is_dept_filtered(self) -> bool:
+        return self.current_department != "All Departments"
+    
+    def set_department(self, dept: str):
+        """Switch department workspace and reload data"""
+        self.current_department = dept
+        self.load_all_data()
+    
+    def _filter_dept(self) -> str:
+        """Return department filter or None for all"""
+        if self.current_department == "All Departments":
+            return None
+        return self.current_department
+    
     def load_all_data(self):
-        """Load all data from database"""
+        """Load all data from database, filtered by current department"""
         self.loading = True
+        dept = self._filter_dept()
         
         try:
+            self.departments = db_service.get_departments()
+            
+            # Shared data (org-wide)
             self.frameworks = db_service.get_frameworks()
             self.unified_controls = db_service.get_unified_controls()
             self.policies = db_service.get_policies()
-            self.control_tests = db_service.get_control_tests()
-            self.issues = db_service.get_issues()
-            self.risks = db_service.get_risks()
-            self.kris = db_service.get_kris()
-            self.kcis = db_service.get_kcis()
             self.connectors = db_service.get_connectors()
             self.ai_models = db_service.get_ai_models()
             self.ai_assessments = db_service.get_ai_assessments()
             self.audit_logs = db_service.get_audit_logs(50)
+            self.kris = db_service.get_kris()
+            self.kcis = db_service.get_kcis()
             
-            # Calculate stats
-            stats = db_service.get_dashboard_stats()
-            self.enabled_frameworks = stats.get("enabled_frameworks", 0)
-            self.total_unified_controls = stats.get("total_unified_controls", 0)
-            self.control_effectiveness = stats.get("control_effectiveness", 0)
-            self.total_tests = stats.get("total_tests", 0)
-            self.passed_tests = stats.get("passed_tests", 0)
-            self.open_issues = stats.get("open_issues", 0)
-            self.total_issues = stats.get("total_issues", 0)
-            self.total_risks = stats.get("total_risks", 0)
-            self.avg_residual_risk = stats.get("avg_residual_risk", 0)
-            self.total_ai_models = stats.get("total_ai_models", 0)
-            self.production_ai_models = stats.get("production_ai_models", 0)
-            self.high_risk_ai_models = stats.get("high_risk_ai_models", 0)
+            # Department-scoped data
+            if dept:
+                self.control_tests = db_service.get_control_tests_by_dept(dept)
+                self.issues = db_service.get_issues_by_dept(dept)
+                self.risks = db_service.get_risks_by_dept(dept)
+            else:
+                self.control_tests = db_service.get_control_tests()
+                self.issues = db_service.get_issues()
+                self.risks = db_service.get_risks()
             
-            print(f"[DEBUG] Loaded {len(self.frameworks)} frameworks, {len(self.unified_controls)} controls, {len(self.ai_models)} AI models")
+            # Calculate stats from loaded data
+            self.enabled_frameworks = len([f for f in self.frameworks if f.get("enabled")])
+            self.total_unified_controls = len(self.unified_controls)
+            effective = [c for c in self.unified_controls if c.get("status") == "Effective"]
+            self.control_effectiveness = round((len(effective) / max(len(self.unified_controls), 1)) * 100, 1)
+            self.total_tests = len(self.control_tests)
+            self.passed_tests = len([t for t in self.control_tests if t.get("result") == "Pass"])
+            open_iss = [i for i in self.issues if i.get("status") in ["Open", "In Progress"]]
+            self.open_issues = len(open_iss)
+            self.total_issues = len(self.issues)
+            self.total_risks = len(self.risks)
+            if self.risks:
+                self.avg_residual_risk = round(sum(r.get("residual_risk_score", 0) for r in self.risks) / len(self.risks), 2)
+            else:
+                self.avg_residual_risk = 0
+            self.total_ai_models = len(self.ai_models)
+            self.production_ai_models = len([m for m in self.ai_models if m.get("status") == "Production"])
+            self.high_risk_ai_models = len([m for m in self.ai_models if m.get("risk_level") in ["High", "Critical"]])
+            
+            print(f"[DEBUG] Loaded {len(self.frameworks)} frameworks, {len(self.unified_controls)} controls, dept={dept or 'All'}")
         except Exception as e:
             print(f"[ERROR] Failed to load data: {e}")
             import traceback
@@ -271,6 +312,7 @@ class RiskState(GRCState):
                 "name": suggestion.get("name", ""),
                 "description": suggestion.get("description", ""),
                 "category": suggestion.get("category", "Security"),
+                "department": self.current_department if self.current_department != "All Departments" else "Unassigned",
                 "inherent_risk_score": int(suggestion.get("inherent_score", 5)),
                 "residual_risk_score": max(1, int(suggestion.get("inherent_score", 5)) - 3),
                 "status": "Active",
@@ -294,6 +336,7 @@ class RiskState(GRCState):
             "name": self.new_risk_name,
             "description": self.new_risk_description,
             "category": self.new_risk_category,
+            "department": self.current_department if self.current_department != "All Departments" else "Unassigned",
             "inherent_risk_score": 5,
             "residual_risk_score": 3,
             "status": "Active",
@@ -963,9 +1006,10 @@ class AuditManagementState(GRCState):
     selected_readiness_fw: str = ""
     
     def load_audit_data(self):
-        """Load all audit-related data"""
+        """Load all audit-related data filtered by department"""
         self.load_all_data()
-        self.audits = db_service.get_audits()
+        dept = self._filter_dept()
+        self.audits = db_service.get_audits(dept)
         self.audit_findings = db_service.get_audit_findings()
     
     # Setters
@@ -1117,6 +1161,7 @@ class AuditManagementState(GRCState):
             "id": str(uuid.uuid4()),
             "name": self.new_audit_name,
             "framework": self.new_audit_framework,
+            "department": self.current_department if self.current_department != "All Departments" else "Unassigned",
             "status": "Planned",
             "auditor": self.new_audit_auditor or "Unassigned",
             "start_date": self.new_audit_start or "TBD",

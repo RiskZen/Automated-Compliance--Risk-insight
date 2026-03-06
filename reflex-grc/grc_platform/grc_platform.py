@@ -390,11 +390,51 @@ def layout(page_content: rx.Component) -> rx.Component:
     return rx.box(
         sidebar(),
         rx.box(
-            page_content,
+            # Top bar with department selector
+            rx.box(
+                rx.hstack(
+                    rx.hstack(
+                        rx.icon("building-2", size=18, color="#64748b"),
+                        rx.text("Workspace:", font_size="14px", color="#64748b", font_weight="500"),
+                        spacing="2"
+                    ),
+                    rx.select(
+                        GRCState.department_names,
+                        value=GRCState.current_department,
+                        on_change=GRCState.set_department,
+                        width="220px",
+                        size="2"
+                    ),
+                    rx.cond(
+                        GRCState.is_dept_filtered,
+                        rx.badge(GRCState.current_department, color_scheme="blue", size="2", variant="solid"),
+                        rx.badge("All Departments", color_scheme="gray", size="2", variant="outline"),
+                    ),
+                    rx.spacer(),
+                    rx.hstack(
+                        rx.icon("user", size=18, color="#64748b"),
+                        rx.text(GRCState.current_user["name"], font_size="14px", color="#374151"),
+                        rx.button("Logout", on_click=AuthState.logout, size="1", variant="outline", cursor="pointer"),
+                        spacing="3",
+                        align_items="center"
+                    ),
+                    width="100%",
+                    align_items="center",
+                    spacing="3"
+                ),
+                bg="white",
+                padding="12px 24px",
+                border_bottom="1px solid #e2e8f0",
+                margin_bottom="0px"
+            ),
+            # Page content
+            rx.box(
+                page_content,
+                padding="40px",
+                bg="#f8fafc",
+                min_height="calc(100vh - 52px)"
+            ),
             margin_left="260px",
-            padding="40px",
-            bg="#f8fafc",
-            min_height="100vh"
         )
     )
 

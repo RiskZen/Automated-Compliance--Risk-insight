@@ -218,8 +218,9 @@ class DatabaseService:
     
     # ── Audit Management ──
     
-    def get_audits(self) -> list:
-        return list(self.db.audits.find({}, {"_id": 0}))
+    def get_audits(self, department: str = None) -> list:
+        query = {"department": department} if department else {}
+        return list(self.db.audits.find(query, {"_id": 0}))
     
     def create_audit(self, audit: dict):
         self.db.audits.insert_one(audit)
@@ -245,6 +246,26 @@ class DatabaseService:
         """Get CCF IDs that have passed control testing"""
         tests = self.get_control_tests()
         return {t.get("control_ccf_id") for t in tests if t.get("result") == "Pass"}
+    
+    # ── Departments / Workspaces ──
+    
+    def get_departments(self) -> list:
+        return list(self.db.departments.find({}, {"_id": 0}))
+    
+    def create_department(self, dept: dict):
+        self.db.departments.insert_one(dept)
+    
+    def get_risks_by_dept(self, department: str = None) -> list:
+        query = {"department": department} if department else {}
+        return list(self.db.risks.find(query, {"_id": 0}))
+    
+    def get_issues_by_dept(self, department: str = None) -> list:
+        query = {"department": department} if department else {}
+        return list(self.db.issues.find(query, {"_id": 0}))
+    
+    def get_control_tests_by_dept(self, department: str = None) -> list:
+        query = {"department": department} if department else {}
+        return list(self.db.control_tests.find(query, {"_id": 0}))
 
 
 # Global database instance
